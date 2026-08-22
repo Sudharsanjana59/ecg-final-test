@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ECG Pulse Match — How to Play</title>
+<link rel="stylesheet" href="style.css" />
+<style>
+  .instr-steps { display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin: 18px 0 6px; }
+  .instr-step {
+    background: var(--bg-panel); border: 1px solid var(--border-soft); border-radius: 14px; padding: 18px;
+    position: relative; overflow: hidden;
+  }
+  .instr-step .num {
+    font-family: var(--font-mono); font-size: 12px; color: var(--ui-dim);
+    background: rgba(255,255,255,0.05); display:inline-block; padding: 2px 9px; border-radius: 999px; margin-bottom: 10px;
+  }
+  .instr-step .icon { font-size: 26px; margin-bottom: 6px; display:block; }
+  .instr-step h3 { font-size: 15.5px; margin: 0 0 6px; }
+  .instr-step p { color: var(--ui-dim); font-size: 13.5px; line-height: 1.55; margin: 0; }
+  .instr-legend { display:flex; flex-wrap:wrap; gap: 10px; margin-top: 10px; }
+  .instr-legend span { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border-soft); color: var(--ui-dim); }
+  .instr-cta { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top: 26px; }
+</style>
+</head>
+<body>
+
+<div class="screen">
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> ECG PULSE MATCH</div>
+    <div class="hstack">
+      <span class="stat-pill" id="userPill">👤 —</span>
+      <a class="btn btn-ghost" href="levels.html" id="skipLink" style="display:none;">Skip → Levels</a>
+    </div>
+  </div>
+
+  <div class="container" style="flex:1; padding-top:26px; padding-bottom:50px; max-width: 980px;">
+    <h1 style="font-size:26px;" class="gradient-text">How to play</h1>
+    <p style="color:var(--ui-dim); margin-top:8px;">Six steps, one rhythm at a time. Read this once — you can always come back via "ℹ️ How to play" on the levels screen.</p>
+
+    <div class="instr-steps">
+      <div class="instr-step">
+        <span class="icon">🧩</span>
+        <div class="num">Step 1</div>
+        <h3>Pick a level</h3>
+        <p>Each level is one ECG rhythm, start to finish — Normal Sinus Rhythm, Atrial Fibrillation, and so on. Levels unlock in order as you clear them.</p>
+      </div>
+      <div class="instr-step">
+        <span class="icon">🫀</span>
+        <div class="num">Step 2</div>
+        <h3>Read the empty strip</h3>
+        <p>The level shows a named ECG strip with a row of empty dashed slots — the waveform is missing and needs to be rebuilt piece by piece.</p>
+      </div>
+      <div class="instr-step">
+        <span class="icon">🖐️</span>
+        <div class="num">Step 3</div>
+        <h3>Drag the right pieces</h3>
+        <p>Below the strip is a tray of small waveform pieces. Some are correct; others are decoys borrowed from a different rhythm — same size, wrong pattern. Drag each piece into a slot, left to right.</p>
+      </div>
+      <div class="instr-step">
+        <span class="icon">🔁</span>
+        <div class="num">Step 4</div>
+        <h3>Swap freely</h3>
+        <p>Not sure yet? Drag a placed piece back to the tray, or drop a new one straight on top of it to swap — nothing is locked in until you submit.</p>
+      </div>
+      <div class="instr-step">
+        <span class="icon">✅</span>
+        <div class="num">Step 5</div>
+        <h3>Submit &amp; check</h3>
+        <p>Once every slot is filled, hit Submit. Each slot lights up green (correct) or red (wrong), and a hint explains the real rhythm if you didn't get it perfect.</p>
+      </div>
+      <div class="instr-step">
+        <span class="icon">⏱️</span>
+        <div class="num">Step 6</div>
+        <h3>Score &amp; unlock</h3>
+        <p>Your score ticks down every second you're still playing, then multiplies by your accuracy when you submit — fast <em>and</em> correct scores highest. A perfect rebuild unlocks the next level.</p>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:24px;">
+      <h2>🎓 Certificate &amp; leaderboard</h2>
+      <div class="sub">Clear every level and a Certificate of Completion unlocks automatically — downloadable as a PNG or printable as a PDF. Every score you submit also lands on the Leaderboard, ranked by total points across every level you've cleared.</div>
+      <div class="instr-legend">
+        <span>★ easy</span>
+        <span>★★ medium</span>
+        <span>★★★ hard</span>
+        <span>★★★★ critical</span>
+      </div>
+    </div>
+
+    <div class="instr-cta">
+      <button class="btn btn-primary" id="startBtn">Let's play →</button>
+    </div>
+  </div>
+
+  <footer class="foot">Synthetic waveforms for educational / gameplay purposes only — not for clinical diagnosis.</footer>
+</div>
+
+<script src="ecg-data.js"></script>
+<script src="common.js"></script>
+<script>
+  const user = requireLogin();
+  if (user) {
+    document.getElementById("userPill").textContent = "👤 " + user.name;
+    // if this player has already been through the instructions before,
+    // show a quick "skip" escape hatch since they're just revisiting.
+    if (hasSeenInstructions()) document.getElementById("skipLink").style.display = "inline-flex";
+
+    document.getElementById("startBtn").addEventListener("click", () => {
+      markInstructionsSeen();
+      window.location.href = "levels.html";
+    });
+  }
+</script>
+</body>
+</html>
