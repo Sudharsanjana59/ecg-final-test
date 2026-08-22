@@ -26,8 +26,7 @@
    Leave CLOUD_DB_URL as "" to keep the game fully local/offline, exactly
    like before.
    ========================================================================= */
-
-const CLOUD_DB_URL = ""; // e.g. "https://your-project-id-default-rtdb.firebaseio.com"
+const CLOUD_DB_URL = "https://your-project-id-default-rtdb.firebaseio.com";
 
 const LS_USER = "ecg_current_user";
 const LS_LEADERBOARD = "ecg_leaderboard";
