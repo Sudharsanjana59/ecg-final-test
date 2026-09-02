@@ -63,7 +63,7 @@
         tr.style.animationDelay = (i * 0.02) + "s";
         tr.innerHTML = `
           <td class="${i === 0 ? "rank-1" : ""}">${medals[i] || (i + 1)}</td>
-          <td>${r.name}${r.name === user.name ? " (you)" : ""}</td>
+          <td>${escapeHtml(r.name)}${r.name === user.name ? " (you)" : ""}</td>
           <td class="mono">${r.totalPoints}</td>
           <td class="mono">${r.totalMarks}/${r.maxMarks}</td>
           <td>${r.levelsPlayed}/${LEVELS.length}</td>
