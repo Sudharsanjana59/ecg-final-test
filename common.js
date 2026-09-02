@@ -27,9 +27,7 @@
    like before.
    ========================================================================= */
 
-const CLOUD_DB_URL = "
-https://ecg-final-test-default-rtdb.firebaseio.com/
-"; 
+const CLOUD_DB_URL = ""; // e.g. "https://your-project-id-default-rtdb.firebaseio.com" (no spaces, no trailing content after the domain)
 
 const LS_USER = "ecg_current_user";
 const LS_LEADERBOARD = "ecg_leaderboard";
@@ -81,7 +79,11 @@ function exitAdminPreview() {
 
 /* ---------------- optional cloud sync (see header comment) ---------------- */
 function cloudEnabled() {
-  return !!CLOUD_DB_URL;
+  return !!CLOUD_DB_URL.trim();
+}
+function cloudBase() {
+  // tolerate a stray trailing slash or accidental whitespace in the constant
+  return CLOUD_DB_URL.trim().replace(/\/+$/, "");
 }
 /* Firebase RTDB keys can't contain . # $ [ ] / or whitespace - swap those
    out so any player name is safe to use as a key. */
@@ -96,7 +98,7 @@ function cloudKeySafe(name) {
 async function cloudGet(path) {
   if (!cloudEnabled()) return undefined;
   try {
-    const res = await fetch(CLOUD_DB_URL + path + ".json");
+    const res = await fetch(cloudBase() + path + ".json");
     if (!res.ok) return undefined;
     return await res.json();
   } catch (e) {
@@ -107,7 +109,11 @@ async function cloudGet(path) {
 async function cloudPut(path, value) {
   if (!cloudEnabled()) return;
   try {
-    await fetch(CLOUD_DB_URL + path + ".json", { method: "PUT", body: JSON.stringify(value) });
+    await fetch(cloudBase() + path + ".json", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(value),
+    });
   } catch (e) {
     console.warn("Cloud sync (put) failed:", e);
   }
@@ -115,7 +121,11 @@ async function cloudPut(path, value) {
 async function cloudPost(path, value) {
   if (!cloudEnabled()) return;
   try {
-    await fetch(CLOUD_DB_URL + path + ".json", { method: "POST", body: JSON.stringify(value) });
+    await fetch(cloudBase() + path + ".json", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(value),
+    });
   } catch (e) {
     console.warn("Cloud sync (post) failed:", e);
   }
@@ -123,7 +133,7 @@ async function cloudPost(path, value) {
 async function cloudDelete(path) {
   if (!cloudEnabled()) return;
   try {
-    await fetch(CLOUD_DB_URL + path + ".json", { method: "DELETE" });
+    await fetch(cloudBase() + path + ".json", { method: "DELETE" });
   } catch (e) {
     console.warn("Cloud sync (delete) failed:", e);
   }
@@ -334,6 +344,14 @@ function applyAccent(el, theme) {
 }
 
 /* ---------------- misc helpers ---------------- */
+/* Escapes user-controlled text (player names, etc.) before it's inserted
+   via innerHTML. Once the leaderboard is cloud-synced, a name typed on
+   ANY device gets rendered on EVERY device — so this isn't optional. */
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = String(str ?? "");
+  return div.innerHTML;
+}
 function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
