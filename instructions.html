@@ -66,20 +66,26 @@
       <div class="instr-step">
         <span class="icon">✅</span>
         <div class="num">Step 5</div>
-        <h3>Submit &amp; check</h3>
-        <p>Once every slot is filled, hit Submit. Each slot lights up green (correct) or red (wrong), and a hint explains the real rhythm if you didn't get it perfect.</p>
+        <h3>Check your answers</h3>
+        <p>Once every slot is filled, hit Check answers. Each slot lights up green (correct), amber (right piece, wrong slot — tap <strong>Fix order</strong>), or red (a decoy is in there — swap it out, or tap <strong>Show answer</strong> to reveal the correct rhythm and then <strong>Retry</strong> that strip yourself). Fix things up and check again — as many times as you need.</p>
+      </div>
+      <div class="instr-step">
+        <span class="icon">🏅</span>
+        <div class="num">Step 6</div>
+        <h3>Earn your marks</h3>
+        <p>Once every strip is fully correct, the level finishes and you're marked out of 10: <strong>10</strong> for solving on your first check, <strong>8</strong> if it took one recheck, and <strong>5</strong> if it took three or more checks — or if you ever used Show answer.</p>
       </div>
       <div class="instr-step">
         <span class="icon">⏱️</span>
-        <div class="num">Step 6</div>
+        <div class="num">Step 7</div>
         <h3>Score &amp; unlock</h3>
-        <p>Your score ticks down every second you're still playing, then multiplies by your accuracy when you submit — fast <em>and</em> correct scores highest. A perfect rebuild unlocks the next level.</p>
+        <p>Alongside your marks, a separate score ticks down every second you're still playing, then multiplies by your accuracy once you finish — fast <em>and</em> correct scores highest. Finishing a level unlocks the next one.</p>
       </div>
     </div>
 
     <div class="panel" style="margin-top:24px;">
       <h2>🎓 Certificate &amp; leaderboard</h2>
-      <div class="sub">Clear every level and a Certificate of Completion unlocks automatically — downloadable as a PNG or printable as a PDF. Every score you submit also lands on the Leaderboard, ranked by total points across every level you've cleared.</div>
+      <div class="sub" id="certLbSub">Clear every level and a Certificate of Completion unlocks automatically — downloadable as a PNG or printable as a PDF. Every level you finish also lands on the Leaderboard, ranked by total points, alongside your total marks.</div>
       <div class="instr-legend">
         <span>★ easy</span>
         <span>★★ medium</span>
@@ -102,6 +108,8 @@
   const user = requireLogin();
   if (user) {
     document.getElementById("userPill").textContent = "👤 " + user.name;
+    document.getElementById("certLbSub").textContent =
+      `Clear every level and a Certificate of Completion unlocks automatically — downloadable as a PNG or printable as a PDF. Every level you finish also lands on the Leaderboard, ranked by total points, alongside your total marks out of ${LEVELS.length * 10}.`;
     // if this player has already been through the instructions before,
     // show a quick "skip" escape hatch since they're just revisiting.
     if (hasSeenInstructions()) document.getElementById("skipLink").style.display = "inline-flex";
