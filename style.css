@@ -287,6 +287,7 @@ button { font-family: var(--font-body); cursor: pointer; }
 .wave-card.correct { border-color: var(--accent, var(--trace-green)); box-shadow: 0 0 0 4px var(--accent-glow, rgba(57,255,136,0.18)); animation: goodPulse .5s ease; }
 .wave-card.wrong { border-color: var(--error-red); box-shadow: 0 0 0 4px rgba(255,77,94,0.18); animation: shake .45s ease; }
 .wave-card.reorderable { border-color: var(--amber); box-shadow: 0 0 0 4px rgba(255,176,32,0.18); animation: shake .45s ease; }
+.wave-card.revealed { border-color: #6c8cff; box-shadow: 0 0 0 4px rgba(108,140,255,0.18); }
 @keyframes goodPulse { 0% { transform: scale(1); } 40% { transform: scale(1.03); } 100% { transform: scale(1); } }
 @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
 
@@ -303,6 +304,7 @@ button { font-family: var(--font-body); cursor: pointer; }
 .wave-card.correct .result-tag { display: inline-block; background: var(--accent-glow, rgba(57,255,136,0.15)); color: var(--accent, var(--trace-green)); }
 .wave-card.wrong .result-tag { display: inline-block; background: rgba(255,77,94,0.15); color: var(--error-red); }
 .wave-card.reorderable .result-tag { display: inline-block; background: rgba(255,176,32,0.16); color: var(--amber); }
+.wave-card.revealed .result-tag { display: inline-block; background: rgba(108,140,255,0.16); color: #6c8cff; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ---- order hint toggle (one hint per level, shown on demand) ---- */
@@ -322,6 +324,7 @@ button { font-family: var(--font-body); cursor: pointer; }
 .card-note { margin-top: 10px; font-size: 12.5px; line-height: 1.5; border-radius: 8px; padding: 8px 10px; display: none; }
 .wave-card.wrong .card-note.for-wrong { display: block; color: var(--error-red); background: rgba(255,77,94,0.08); border: 1px solid rgba(255,77,94,0.25); }
 .wave-card.reorderable .card-note.for-reorder { display: block; color: var(--amber); background: rgba(255,176,32,0.08); border: 1px solid rgba(255,176,32,0.25); }
+.wave-card.revealed .card-note.for-revealed { display: block; color: #6c8cff; background: rgba(108,140,255,0.08); border: 1px solid rgba(108,140,255,0.25); }
 
 .card-actions-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .btn-reorder {
@@ -331,9 +334,27 @@ button { font-family: var(--font-body); cursor: pointer; }
 }
 .wave-card.reorderable .btn-reorder { display: inline-flex; }
 .btn-reorder:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(255,176,32,0.25); }
+.btn-reveal {
+  font-family: var(--font-mono); font-size: 12.5px; font-weight: 700; color: #eef2ff;
+  background: linear-gradient(135deg, #6c8cff 0%, #9d6cff 100%);
+  border: 1px solid rgba(158,140,255,0.6); border-radius: 999px; padding: 7px 16px; cursor: pointer;
+  display: none; align-items: center; gap: 6px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 6px 16px rgba(108,140,255,0.35);
+  transition: transform .12s cubic-bezier(.2,.8,.2,1), box-shadow .12s ease, filter .12s ease;
+  animation: revealPulse 2.2s ease-in-out infinite;
+}
+.wave-card.wrong .btn-reveal, .wave-card.revealed .btn-reveal { display: inline-flex; }
+.btn-reveal:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 10px 22px rgba(108,140,255,0.5); filter: brightness(1.08); animation-play-state: paused; }
+.btn-reveal:active { transform: translateY(0) scale(0.97); }
+.wave-card.revealed .btn-reveal { background: linear-gradient(135deg, #4d5a75 0%, #333d54 100%); animation: none; box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 6px 14px rgba(0,0,0,0.3); }
+@keyframes revealPulse {
+  0%, 100% { box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 6px 16px rgba(108,140,255,0.35); }
+  50% { box-shadow: 0 1px 0 rgba(255,255,255,0.35) inset, 0 6px 22px rgba(108,140,255,0.7); }
+}
 
 /* ---- piece that is correct type but sitting in the wrong slot ---- */
 .slot.right-type-wrong-pos { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(255,176,32,0.18); }
+.slot.revealed { border-color: #6c8cff; box-shadow: 0 0 0 3px rgba(108,140,255,0.18); }
 
 /* ---- attempt summary banner shown between check passes ---- */
 .attempt-banner {
@@ -408,6 +429,8 @@ button { font-family: var(--font-body); cursor: pointer; }
 .chip.ghost { opacity: 0; }
 
 .submit-row { display: flex; justify-content: center; margin: 26px 0 10px; gap: 12px; }
+.btn-retry-level { border-color: rgba(255,77,94,0.4); color: var(--error-red); }
+.btn-retry-level:hover { box-shadow: 0 14px 26px rgba(255,77,94,0.18), 0 2px 0 rgba(0,0,0,0.55); border-color: var(--error-red); }
 
 /* result modal */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(4,8,12,0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
