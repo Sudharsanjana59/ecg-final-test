@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ECG Pulse Match — Admin</title>
-<link rel="stylesheet" href="style.css" /> 
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <div class="screen">
@@ -186,7 +186,7 @@
       document.getElementById("emptyState").style.display = players.length ? "none" : "block";
       players.forEach((p, i) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${i + 1}</td><td>${p.name}</td>
+        tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(p.name)}</td>
           <td class="mono">${p.totalPoints}</td>
           <td class="mono">${p.totalMarks}/${p.maxMarks}</td>
           <td>${p.levelsPlayed}/${LEVELS.length}</td>
@@ -224,7 +224,7 @@
       podium.innerHTML = order.map((r, i) => r ? `
         <div class="podium-slot ${slots[i].cls}">
           <div class="medal">${slots[i].medal}</div>
-          <div class="p-name">${r.name}</div>
+          <div class="p-name">${escapeHtml(r.name)}</div>
           <div class="p-score">${r.totalPoints} pts</div>
         </div>` : "").join("") || `<p style="color:var(--ui-dim);">No submissions yet — the podium is waiting for its first player.</p>`;
     }
@@ -239,7 +239,7 @@
     document.getElementById("clearData").addEventListener("click", async () => {
       const msg = cloudEnabled()
         ? "This will permanently clear all leaderboard, progress, and certificate data for EVERY device (shared cloud store included). Continue?"
-        : "This will permanently clear all leaderboard and progress data on this device. Continue?";
+        : "This will permanently clear all leaderboard, progress, and certificate data on this device.\n\nNote: cloud sync isn't configured, so this only clears THIS device — other devices/browsers will keep their own data. Continue?";
       if (!confirm(msg)) return;
 
       const btn = document.getElementById("clearData");
@@ -256,9 +256,9 @@
         ]);
       }
 
-      localStorage.removeItem("ecg_leaderboard");
-      localStorage.removeItem("ecg_progress");
-      localStorage.removeItem("ecg_certificates");
+      localStorage.removeItem(LS_LEADERBOARD);
+      localStorage.removeItem(LS_PROGRESS);
+      localStorage.removeItem(LS_CERTIFICATES);
 
       btn.disabled = false;
       btn.textContent = "Clear all data";
