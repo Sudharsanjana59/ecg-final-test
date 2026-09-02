@@ -80,6 +80,7 @@ if (user) {
     id: "card_" + i,
     typeId,
     def: ECG_TYPES[typeId],
+    revealed: false,
   }));
 
   const board = document.getElementById("board");
@@ -101,9 +102,11 @@ if (user) {
       <button type="button" class="card-hint-btn" data-card-id="${card.id}">💡 Which piece goes first?</button>
       <div class="order-hint-row" data-card-id="${card.id}">💡 ${level.orderHint || "Segment 1 is always the earliest part of the strip — read the pattern left to right."}</div>
       <div class="card-note for-reorder">🔀 You've got the right pieces — they're just out of order. Tap <b>Fix order</b> to snap them into place.</div>
-      <div class="card-note for-wrong">✕ One or more pieces here don't belong to this rhythm. Swap out the wrong ones, then arrange the right pieces in order.</div>
+      <div class="card-note for-wrong">✕ One or more pieces here don't belong to this rhythm. Swap out the wrong ones, then arrange the right pieces in order — or tap <b>Show answer</b> to reveal it.</div>
+      <div class="card-note for-revealed">👁 Here's the correct rhythm. Study it, then tap <b>Retry</b> to clear the strip and rebuild it yourself.</div>
       <div class="card-actions-row">
         <button type="button" class="btn-reorder" data-card-id="${card.id}">🔀 Fix order</button>
+        <button type="button" class="btn-reveal" data-card-id="${card.id}">👁 Show answer</button>
       </div>
       <div class="hint-row">💡 ${card.def.hint}</div>
     `;
@@ -159,7 +162,7 @@ if (user) {
 
   function resetSlot(slotEl) {
     slotEl.innerHTML = `<span class="slot-idx">${parseInt(slotEl.dataset.slotIdx, 10) + 1}</span>`;
-    slotEl.classList.remove("filled", "correct", "wrong", "right-type-wrong-pos");
+    slotEl.classList.remove("filled", "correct", "wrong", "right-type-wrong-pos", "revealed");
   }
   function moveToTray(pieceEl) {
     pieceEl.classList.remove("in-slot");
@@ -171,7 +174,7 @@ if (user) {
     slotEl.innerHTML = "";
     slotEl.appendChild(pieceEl);
     pieceEl.classList.add("in-slot");
-    slotEl.classList.remove("correct", "wrong", "right-type-wrong-pos");
+    slotEl.classList.remove("correct", "wrong", "right-type-wrong-pos", "revealed");
     slotEl.classList.add("filled");
     // brief "snap into place" pulse so the drop feels tactile, while the
     // track's own gap keeps each piece visibly separate from its neighbors
@@ -252,18 +255,16 @@ if (user) {
     scoreEl.textContent = liveScore;
   }, 250);
 
-  // ---- checking / reordering / submit ----
-  // Phase 1 ("Check answers"): evaluate every card without ending the attempt.
-  //   - Fully correct cards get locked in place.
-  //   - Cards holding the right pieces in the wrong order get a "Fix order" button.
-  //   - Cards holding at least one wrong (decoy) piece get an inline warning message.
-  // Phase 2 ("Finish & score"): locks everything, scores, saves, shows the result modal.
-  let phase = 1;
-  const submitBtn = document.getElementById("submitBtn");
+  // ---- checking / reordering / revealing pieces ----
+  // Fully correct cards get locked in place; cards with right pieces in
+  // the wrong order get a "Fix order" button; cards with at least one
+  // wrong (decoy) piece get a "Show answer" button (see submit handler
+  // below for how repeated checks and revealed answers affect marks).
   const attemptBanner = document.getElementById("attemptBanner");
 
   function evaluateCard(card) {
     const cardEl = document.querySelector(`.wave-card[data-card-id="${card.id}"]`);
+    if (card.revealed) return { status: "revealed", cardCorrect: 0 }; // must Retry before this can count
     let cardCorrect = 0;
     let correctTypeCount = 0;
     for (let s = 0; s < N; s++) {
@@ -277,7 +278,7 @@ if (user) {
       else { slotEl.classList.add("wrong"); }
       if (isRightType) correctTypeCount++;
     }
-    cardEl.classList.remove("correct", "wrong", "reorderable");
+    cardEl.classList.remove("correct", "wrong", "reorderable", "revealed");
     let status;
     if (cardCorrect === N) status = "correct";
     else if (correctTypeCount === N) status = "reorderable"; // right pieces, wrong slots
@@ -293,6 +294,9 @@ if (user) {
 
   function lockCardPieces(cardEl) {
     cardEl.querySelectorAll(".piece").forEach((p) => { p.dataset.locked = "1"; p.style.cursor = "default"; });
+  }
+  function unlockCardPieces(cardEl) {
+    cardEl.querySelectorAll(".piece").forEach((p) => { p.dataset.locked = ""; p.style.cursor = ""; });
   }
 
   function fixCardOrder(card) {
@@ -320,34 +324,85 @@ if (user) {
     });
   });
 
+  /* "Show answer" reveals the correct piece for every segment of this card
+     (pulled from wherever it's currently sitting, even if it's parked in
+     another card's slot or the tray) and locks them in place so the
+     player can study the pattern. It deliberately does NOT count as
+     solved — evaluateCard() skips revealed cards — so the level can't be
+     finished until the player taps "Retry" and rebuilds it themselves. */
+  function revealCardAnswer(card) {
+    if (submitted || card.revealed) return;
+    const cardEl = document.querySelector(`.wave-card[data-card-id="${card.id}"]`);
+    const slots = [...cardEl.querySelectorAll(".slot")];
+    for (let s = 0; s < N; s++) {
+      const correctPiece = document.querySelector(`.piece[data-source-type="${card.typeId}"][data-seg="${s}"]`);
+      if (correctPiece) placeInSlot(correctPiece, slots[s]);
+    }
+    card.revealed = true;
+    answerRevealedAny = true;
+    cardEl.classList.remove("correct", "wrong", "reorderable");
+    cardEl.classList.add("revealed", "show-hint");
+    cardEl.querySelector(".result-tag").textContent = "👁 Answer shown";
+    slots.forEach((slotEl) => { slotEl.classList.remove("correct", "wrong", "right-type-wrong-pos"); slotEl.classList.add("revealed"); });
+    lockCardPieces(cardEl);
+    cardEl.querySelector(".btn-reveal").textContent = "🔁 Retry";
+    updateProgress();
+    refreshBanner();
+  }
+
+  function retryCard(card) {
+    if (submitted) return;
+    const cardEl = document.querySelector(`.wave-card[data-card-id="${card.id}"]`);
+    unlockCardPieces(cardEl);
+    cardEl.querySelectorAll(".slot").forEach((slotEl) => {
+      const pieceEl = slotEl.querySelector(".piece");
+      if (pieceEl) moveToTray(pieceEl);
+      resetSlot(slotEl);
+    });
+    card.revealed = false;
+    cardEl.classList.remove("correct", "wrong", "reorderable", "revealed", "show-hint");
+    cardEl.querySelector(".result-tag").textContent = "";
+    cardEl.querySelector(".btn-reveal").textContent = "👁 Show answer";
+    updateProgress();
+    refreshBanner();
+  }
+
+  document.querySelectorAll(".btn-reveal").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const card = cards.find((c) => c.id === btn.dataset.cardId);
+      if (!card) return;
+      if (card.revealed) retryCard(card); else revealCardAnswer(card);
+    });
+  });
+
   function refreshBanner() {
-    const correctCount = cards.filter((c) => document.querySelector(`.wave-card[data-card-id="${c.id}"]`).classList.contains("correct")).length;
-    const reorderCount = cards.filter((c) => document.querySelector(`.wave-card[data-card-id="${c.id}"]`).classList.contains("reorderable")).length;
-    const wrongCount = cards.length - correctCount - reorderCount;
-    if (phase === 1) return;
-    let msg = `${correctCount}/${cards.length} strips correct.`;
-    if (reorderCount) msg += ` ${reorderCount} just need reordering — tap "Fix order" on those.`;
-    if (wrongCount) msg += ` ${wrongCount} still have wrong pieces in them.`;
+    const cardEls = cards.map((c) => document.querySelector(`.wave-card[data-card-id="${c.id}"]`));
+    const correctCount = cardEls.filter((el) => el.classList.contains("correct")).length;
+    const reorderCount = cardEls.filter((el) => el.classList.contains("reorderable")).length;
+    const revealedCount = cardEls.filter((el) => el.classList.contains("revealed")).length;
+    const wrongCount = cards.length - correctCount - reorderCount - revealedCount;
+    let msg = `Check ${checkAttempts || 1}: ${correctCount}/${cards.length} strips correct.`;
+    if (reorderCount) msg += ` ${reorderCount} just need reordering — tap "Fix order".`;
+    if (revealedCount) msg += ` ${revealedCount} showing the answer — tap "Retry" to solve ${revealedCount === 1 ? "it" : "them"} yourself.`;
+    if (wrongCount) msg += ` ${wrongCount} still have wrong pieces — swap them or tap "Show answer".`;
     attemptBanner.textContent = "🩺 " + msg;
     attemptBanner.classList.add("shown");
   }
+
+  // ---- submit: repeatable "Check answers" -> finalize once everything is correct ----
+  // Marks (out of 10) reward getting there in fewer checks:
+  //   solved on the very first check           -> 10
+  //   solved after exactly one recheck          -> 8
+  //   solved after 2+ rechecks, OR any answer revealed -> 5
+  let checkAttempts = 0;
+  let answerRevealedAny = false;
+  const submitBtn = document.getElementById("submitBtn");
 
   submitBtn.addEventListener("click", () => {
     const filled = document.querySelectorAll(".slot.filled").length;
     if (filled < totalSlots) return;
 
-    if (phase === 1) {
-      cards.forEach((card) => evaluateCard(card));
-      phase = 2;
-      submitBtn.textContent = "Finish & score";
-      refreshBanner();
-      return;
-    }
-
-    // phase 2: finalize
-    submitted = true;
-    clearInterval(timerInterval);
-    const timeTakenSec = (performance.now() - startTime) / 1000;
+    checkAttempts++;
 
     let correctSlots = 0;
     let allCardsCorrect = true;
@@ -355,50 +410,71 @@ if (user) {
       const { status, cardCorrect } = evaluateCard(card);
       correctSlots += cardCorrect;
       if (status !== "correct") allCardsCorrect = false;
-      document.querySelector(`.wave-card[data-card-id="${card.id}"]`).classList.add("show-hint");
     });
+    refreshBanner();
+
+    if (!allCardsCorrect) {
+      // Stay interactive: fix pieces, use Fix order / Show answer, then check again.
+      document.getElementById("scorePreview").textContent = liveScore;
+      return;
+    }
+
+    // every card correct -> finalize
+    submitted = true;
+    clearInterval(timerInterval);
     attemptBanner.classList.remove("shown");
+    const timeTakenSec = (performance.now() - startTime) / 1000;
+    cards.forEach((card) => document.querySelector(`.wave-card[data-card-id="${card.id}"]`).classList.add("show-hint"));
 
     const accuracy = correctSlots / totalSlots;
     const finalScore = Math.round(liveScore * accuracy);
     document.getElementById("scorePreview").textContent = finalScore;
 
+    const marks = answerRevealedAny ? 5 : checkAttempts <= 1 ? 10 : checkAttempts === 2 ? 8 : 5;
+
     addLeaderboardEntry({
       name: user.name,
       level: level.level,
       score: finalScore,
+      marks,
       correct: correctSlots,
       total: totalSlots,
       timeTakenSec: Math.round(timeTakenSec),
     });
 
+    unlockNextLevel(user.name, level.level);
+    launchConfetti();
     let justCertified = false;
-    if (allCardsCorrect) {
-      unlockNextLevel(user.name, level.level);
-      launchConfetti();
-      if (level.level === LEVELS.length) { getOrIssueCertificate(user.name); justCertified = true; }
-    }
-    showResultModal({ correctSlots, totalSlots, finalScore, timeTakenSec, allCardsCorrect, level, justCertified });
+    if (level.level === LEVELS.length) { getOrIssueCertificate(user.name); justCertified = true; }
+    showResultModal({ correctSlots, totalSlots, finalScore, timeTakenSec, level, justCertified, marks, checkAttempts, answerRevealedAny });
   });
 
-  function showResultModal({ correctSlots, totalSlots, finalScore, timeTakenSec, allCardsCorrect, level, justCertified }) {
+  function marksBlurb(marks, attempts, revealed) {
+    if (marks === 10) return "Perfect — solved on the first check, no hints used.";
+    if (marks === 8) return "Nicely done — solved after one recheck.";
+    if (revealed) return "Solved after viewing the revealed answer.";
+    return `Solved after ${attempts} checks.`;
+  }
+
+  function showResultModal({ correctSlots, totalSlots, finalScore, timeTakenSec, level, justCertified, marks, checkAttempts, answerRevealedAny }) {
     const backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     const isFinalLevel = level.level === LEVELS.length;
     let actionsHtml;
     if (justCertified) {
       actionsHtml = `<button class="btn btn-ghost" id="retryBtn">Retry level</button><button class="btn btn-primary" id="certBtn">🎓 Get your certificate</button>`;
-    } else if (allCardsCorrect && !isFinalLevel) {
+    } else if (!isFinalLevel) {
       actionsHtml = `<button class="btn btn-ghost" id="retryBtn">Retry level</button><button class="btn btn-primary" id="nextBtn">Next level →</button>`;
     } else {
       actionsHtml = `<button class="btn btn-ghost" id="retryBtn">Retry level</button><button class="btn btn-primary" id="levelsBtn">Back to levels</button>`;
     }
     backdrop.innerHTML = `
       <div class="modal">
-        <div style="font-size:38px;">${justCertified ? "🎓" : allCardsCorrect ? "🎉" : "🩺"}</div>
-        <h2 style="margin:10px 0 4px;">${justCertified ? "Course complete!" : allCardsCorrect ? "Perfectly rebuilt!" : "Keep practicing"}</h2>
+        <div style="font-size:38px;">${justCertified ? "🎓" : "🎉"}</div>
+        <h2 style="margin:10px 0 4px;">${justCertified ? "Course complete!" : "Perfectly rebuilt!"}</h2>
         <div class="score-num">${finalScore}</div>
         <p>${correctSlots}/${totalSlots} pieces correct · ${formatTime(timeTakenSec)} elapsed</p>
+        <p style="margin-top:4px;">Marks: <b>${marks}/10</b> — ${marksBlurb(marks, checkAttempts, answerRevealedAny)}</p>
         ${justCertified ? `<p style="color:var(--accent, var(--trace-green)); font-weight:600;">You've cleared all ${LEVELS.length} rhythms — your certificate is ready.</p>` : ""}
         <div class="hstack" style="justify-content:center; margin-top:18px; gap:10px;">
           ${actionsHtml}
