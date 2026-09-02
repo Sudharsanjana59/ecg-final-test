@@ -18,13 +18,13 @@
 
   <div class="container" style="flex:1; padding-top:26px; padding-bottom:40px;">
     <h1 style="font-size:26px;" class="gradient-text">🏆 Leaderboard</h1>
-    <p style="color:var(--ui-dim); margin-top:8px; margin-bottom:18px;" id="lbSub">Total points per player — best score on each level they've cleared, added up. Stored on this device.</p>
+    <p style="color:var(--ui-dim); margin-top:8px; margin-bottom:18px;" id="lbSub">Total points per player — best score on each level they've cleared, added up. Marks reflect how many checks it took to solve each level (10 = first try). Stored on this device.</p>
 
     <div class="panel">
       <div class="table-scroll">
         <table>
           <thead>
-            <tr><th>#</th><th>Player</th><th>Total points</th><th>Levels played</th><th>Best single score</th><th>Last played</th></tr>
+            <tr><th>#</th><th>Player</th><th>Total points</th><th>Marks</th><th>Levels played</th><th>Best single score</th><th>Last played</th></tr>
           </thead>
           <tbody id="lbBody"></tbody>
         </table>
@@ -43,7 +43,7 @@
     document.getElementById("logoutBtn").addEventListener("click", logout);
 
     if (cloudEnabled()) {
-      document.getElementById("lbSub").textContent = "Total points per player — best score on each level they've cleared, added up. Synced across devices.";
+      document.getElementById("lbSub").textContent = "Total points per player — best score on each level they've cleared, added up. Marks reflect how many checks it took to solve each level (10 = first try). Synced across devices.";
       document.getElementById("lbFoot").textContent = "Scores are merged from this device and the shared cloud store.";
     }
 
@@ -65,6 +65,7 @@
           <td class="${i === 0 ? "rank-1" : ""}">${medals[i] || (i + 1)}</td>
           <td>${r.name}${r.name === user.name ? " (you)" : ""}</td>
           <td class="mono">${r.totalPoints}</td>
+          <td class="mono">${r.totalMarks}/${r.maxMarks}</td>
           <td>${r.levelsPlayed}/${LEVELS.length}</td>
           <td class="mono">${r.bestSingle}</td>
           <td>${new Date(r.lastPlayed).toLocaleDateString()}</td>
