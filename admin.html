@@ -92,7 +92,7 @@
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>#</th><th>Player</th><th>Total points</th><th>Levels played</th><th>Best single score</th><th>Last played</th></tr></thead>
+            <thead><tr><th>#</th><th>Player</th><th>Total points</th><th>Marks</th><th>Levels played</th><th>Best single score</th><th>Last played</th></tr></thead>
             <tbody id="lbBody"></tbody>
           </table>
         </div>
@@ -188,6 +188,7 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${i + 1}</td><td>${p.name}</td>
           <td class="mono">${p.totalPoints}</td>
+          <td class="mono">${p.totalMarks}/${p.maxMarks}</td>
           <td>${p.levelsPlayed}/${LEVELS.length}</td>
           <td class="mono">${p.bestSingle}</td>
           <td>${new Date(p.lastPlayed).toLocaleString()}</td>`;
