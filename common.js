@@ -27,7 +27,9 @@
    like before.
    ========================================================================= */
 
-const CLOUD_DB_URL = "PASTE_YOUR_DATABASE_URL_HERE"; // e.g. "https://your-project-id-default-rtdb.firebaseio.com"
+const CLOUD_DB_URL = "
+https://ecg-final-test-default-rtdb.firebaseio.com/
+"; 
 
 const LS_USER = "ecg_current_user";
 const LS_LEADERBOARD = "ecg_leaderboard";
