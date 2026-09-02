@@ -46,6 +46,7 @@
 
   <div class="submit-row" style="position:fixed; left:0; right:0; bottom:86px; z-index:16;">
     <button class="btn btn-primary" id="submitBtn" style="min-width:220px;">Check answers</button>
+    <button class="btn btn-ghost btn-retry-level" id="retryLevelBtn" style="display:none;">🔁 Retry level</button>
   </div>
 </div>
 
@@ -340,6 +341,7 @@ if (user) {
     }
     card.revealed = true;
     answerRevealedAny = true;
+    revealCount++;
     cardEl.classList.remove("correct", "wrong", "reorderable");
     cardEl.classList.add("revealed", "show-hint");
     cardEl.querySelector(".result-tag").textContent = "👁 Answer shown";
@@ -390,13 +392,20 @@ if (user) {
   }
 
   // ---- submit: repeatable "Check answers" -> finalize once everything is correct ----
-  // Marks (out of 10) reward getting there in fewer checks:
-  //   solved on the very first check           -> 10
-  //   solved after exactly one recheck          -> 8
-  //   solved after 2+ rechecks, OR any answer revealed -> 5
+  // Marks (out of 10) reward getting there with the fewest checks AND the fewest
+  // "Show answer" reveals — whichever signal is worse drags the marks down:
+  //   1 attempt (of either kind)      -> 10
+  //   2 attempts                      -> 8
+  //   3+ attempts                     -> 5
   let checkAttempts = 0;
+  let revealCount = 0;
   let answerRevealedAny = false;
   const submitBtn = document.getElementById("submitBtn");
+  const retryLevelBtn = document.getElementById("retryLevelBtn");
+
+  function tierMarks(n) { return n <= 1 ? 10 : n === 2 ? 8 : 5; }
+
+  retryLevelBtn.addEventListener("click", () => window.location.reload());
 
   submitBtn.addEventListener("click", () => {
     const filled = document.querySelectorAll(".slot.filled").length;
@@ -414,8 +423,10 @@ if (user) {
     refreshBanner();
 
     if (!allCardsCorrect) {
-      // Stay interactive: fix pieces, use Fix order / Show answer, then check again.
+      // Stay interactive: fix pieces, use Fix order / Show answer, then check again —
+      // or tap "Retry level" for a clean restart.
       document.getElementById("scorePreview").textContent = liveScore;
+      retryLevelBtn.style.display = "inline-flex";
       return;
     }
 
@@ -423,6 +434,7 @@ if (user) {
     submitted = true;
     clearInterval(timerInterval);
     attemptBanner.classList.remove("shown");
+    retryLevelBtn.style.display = "none";
     const timeTakenSec = (performance.now() - startTime) / 1000;
     cards.forEach((card) => document.querySelector(`.wave-card[data-card-id="${card.id}"]`).classList.add("show-hint"));
 
@@ -430,7 +442,7 @@ if (user) {
     const finalScore = Math.round(liveScore * accuracy);
     document.getElementById("scorePreview").textContent = finalScore;
 
-    const marks = answerRevealedAny ? 5 : checkAttempts <= 1 ? 10 : checkAttempts === 2 ? 8 : 5;
+    const marks = Math.min(tierMarks(checkAttempts), tierMarks(revealCount));
 
     addLeaderboardEntry({
       name: user.name,
@@ -450,8 +462,11 @@ if (user) {
   });
 
   function marksBlurb(marks, attempts, revealed) {
-    if (marks === 10) return "Perfect — solved on the first check, no hints used.";
-    if (marks === 8) return "Nicely done — solved after one recheck.";
+    if (marks === 10) return "Perfect — solved on the first try, no penalties.";
+    if (marks === 8) return revealCount === 2
+      ? "Solved after using \"Show answer\" twice."
+      : "Nicely done — solved after one recheck.";
+    if (revealCount >= 3) return `Solved after using "Show answer" ${revealCount} times.`;
     if (revealed) return "Solved after viewing the revealed answer.";
     return `Solved after ${attempts} checks.`;
   }
