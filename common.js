@@ -27,7 +27,7 @@
    like before.
    ========================================================================= */
 
-const CLOUD_DB_URL = ""; // e.g. "https://your-project-id-default-rtdb.firebaseio.com"
+const CLOUD_DB_URL = "PASTE_YOUR_DATABASE_URL_HERE"; // e.g. "https://your-project-id-default-rtdb.firebaseio.com"
 
 const LS_USER = "ecg_current_user";
 const LS_LEADERBOARD = "ecg_leaderboard";
@@ -41,7 +41,7 @@ function getCurrentUser() {
   try { return JSON.parse(sessionStorage.getItem(LS_USER)); } catch (e) { return null; }
 }
 function setCurrentUser(name) {
-  sessionStorage.setItem(LS_USER, JSON.stringify({ name, isAdmin: name.trim().toLowerCase() === "adminisnarmi" }));
+  sessionStorage.setItem(LS_USER, JSON.stringify({ name, isAdmin: name.trim().toLowerCase() === "admin" }));
 }
 function logout() {
   sessionStorage.removeItem(LS_USER);
@@ -86,15 +86,20 @@ function cloudEnabled() {
 function cloudKeySafe(name) {
   return String(name).replace(/[.#$\[\]\/\s]/g, "_") || "player";
 }
+/* Returns `undefined` if the fetch itself failed (offline, network error,
+   bad URL) so callers know NOT to touch local data. Returns the actual
+   value otherwise, which may legitimately be `null` if the path is empty
+   on the server (e.g. right after an admin clears all data) — callers
+   should treat that as "the cloud has nothing here" and sync accordingly. */
 async function cloudGet(path) {
-  if (!cloudEnabled()) return null;
+  if (!cloudEnabled()) return undefined;
   try {
     const res = await fetch(CLOUD_DB_URL + path + ".json");
-    if (!res.ok) return null;
+    if (!res.ok) return undefined;
     return await res.json();
   } catch (e) {
     console.warn("Cloud sync (get) unavailable:", e);
-    return null;
+    return undefined;
   }
 }
 async function cloudPut(path, value) {
@@ -113,11 +118,26 @@ async function cloudPost(path, value) {
     console.warn("Cloud sync (post) failed:", e);
   }
 }
+async function cloudDelete(path) {
+  if (!cloudEnabled()) return;
+  try {
+    await fetch(CLOUD_DB_URL + path + ".json", { method: "DELETE" });
+  } catch (e) {
+    console.warn("Cloud sync (delete) failed:", e);
+  }
+}
 
-/* Pulls the shared cloud leaderboard/progress/certificates and merges
-   them into this device's localStorage (additive only — never deletes
-   local data). Safe to call repeatedly; a no-op if cloud sync isn't
-   configured. Call this once on page load, then re-render. */
+/* Pulls the shared cloud leaderboard/progress/certificates and reconciles
+   them into this device's localStorage. The cloud is treated as the
+   SOURCE OF TRUTH: if the cloud fetch succeeds, local data is replaced
+   with (local ∪ cloud) for anything the cloud still has, and rows that
+   only exist locally but are gone from the cloud (e.g. an admin hit
+   "Clear all data", which wipes the cloud too) are dropped — so a clear
+   propagates to every device the next time it syncs. If a fetch fails
+   (offline, bad URL) that path is left untouched rather than wiped, so a
+   flaky connection can never look like a clear. Safe to call repeatedly;
+   a no-op if cloud sync isn't configured. Call this once on page load,
+   then re-render. */
 async function refreshFromCloud() {
   if (!cloudEnabled()) return;
   try {
@@ -127,36 +147,34 @@ async function refreshFromCloud() {
       cloudGet("/certificates"),
     ]);
 
-    if (cloudBoard) {
-      const cloudRows = Object.values(cloudBoard).filter(Boolean);
-      const localRows = getLeaderboard();
-      const seen = new Set(localRows.map((r) => `${r.name}|${r.level}|${r.score}|${r.timestamp}`));
-      const merged = localRows.slice();
-      cloudRows.forEach((r) => {
-        const key = `${r.name}|${r.level}|${r.score}|${r.timestamp}`;
-        if (!seen.has(key)) { merged.push(r); seen.add(key); }
-      });
-      localStorage.setItem(LS_LEADERBOARD, JSON.stringify(merged));
+    // leaderboard: cloud is authoritative. undefined = fetch failed, skip.
+    if (cloudBoard !== undefined) {
+      const cloudRows = cloudBoard ? Object.values(cloudBoard).filter(Boolean) : [];
+      localStorage.setItem(LS_LEADERBOARD, JSON.stringify(cloudRows));
     }
 
-    if (cloudProgress) {
-      const localProgress = JSON.parse(localStorage.getItem(LS_PROGRESS) || "{}");
-      Object.values(cloudProgress).filter(Boolean).forEach((p) => {
-        if (!p.name) return;
-        const cur = localProgress[p.name] || { unlocked: 1 };
-        cur.unlocked = Math.max(cur.unlocked, p.unlocked || 1);
-        localProgress[p.name] = cur;
-      });
-      localStorage.setItem(LS_PROGRESS, JSON.stringify(localProgress));
+    // progress: cloud is authoritative per-player.
+    if (cloudProgress !== undefined) {
+      const merged = {};
+      if (cloudProgress) {
+        Object.values(cloudProgress).filter(Boolean).forEach((p) => {
+          if (!p.name) return;
+          merged[p.name] = { unlocked: p.unlocked || 1 };
+        });
+      }
+      localStorage.setItem(LS_PROGRESS, JSON.stringify(merged));
     }
 
-    if (cloudCerts) {
-      const localCerts = JSON.parse(localStorage.getItem(LS_CERTIFICATES) || "{}");
-      Object.values(cloudCerts).filter(Boolean).forEach((rec) => {
-        if (!rec.name) return;
-        if (!localCerts[rec.name]) localCerts[rec.name] = rec;
-      });
-      localStorage.setItem(LS_CERTIFICATES, JSON.stringify(localCerts));
+    // certificates: cloud is authoritative per-player.
+    if (cloudCerts !== undefined) {
+      const merged = {};
+      if (cloudCerts) {
+        Object.values(cloudCerts).filter(Boolean).forEach((rec) => {
+          if (!rec.name) return;
+          merged[rec.name] = rec;
+        });
+      }
+      localStorage.setItem(LS_CERTIFICATES, JSON.stringify(merged));
     }
   } catch (e) {
     console.warn("Cloud sync (refresh) failed:", e);
