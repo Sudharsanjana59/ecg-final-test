@@ -8,7 +8,7 @@
    a laptop) can never see each other's data on their own. That's not a
    bug, it's what "no build step, no server" means.
 
-   OPTIONAL CROSS-DEVICE SYNC (5-minute, free, no-code-build setup)
+   OPTIONAL CROSS-DEVICE SYNC (5-minute, free, no-code-build setup) 
    This file can ALSO mirror the leaderboard/progress/certificates to a
    small free cloud database, so every device that opens the game merges
    in everyone else's latest data. It's entirely optional and off by
