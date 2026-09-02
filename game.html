@@ -404,7 +404,7 @@ if (user) {
   const submitBtn = document.getElementById("submitBtn");
   const retryLevelBtn = document.getElementById("retryLevelBtn");
 
-  function tierMarks(n) { return n <= 1 ? 10 : n === 2 ? 8 : 5; }
+  function tierMarks(n) { return n <= 1 ? 10 : n === 2 ? 10 : 5; }
 
   retryLevelBtn.addEventListener("click", () => window.location.reload());
 
