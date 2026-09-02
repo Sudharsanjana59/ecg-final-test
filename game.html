@@ -392,19 +392,17 @@ if (user) {
   }
 
   // ---- submit: repeatable "Check answers" -> finalize once everything is correct ----
-  // Marks (out of 10) reward getting there with the fewest checks AND the fewest
-  // "Show answer" reveals — whichever signal is worse drags the marks down.
+  // Marks (out of 10) step down by 1 for every extra attempt — whichever of
+  // "Check answers" clicks or "Show answer" reveals is worse sets the marks:
+  //   1 attempt -> 10, 2 -> 9, 3 -> 8, 4 -> 7 ... floor of 5 (never lower).
   // "Fix order" is free — it never affects marks.
-  //   1 attempt (of either kind)      -> 10
-  //   2 attempts                      -> 8
-  //   3+ attempts                     -> 5
   let checkAttempts = 0;
   let revealCount = 0;
   let answerRevealedAny = false;
   const submitBtn = document.getElementById("submitBtn");
   const retryLevelBtn = document.getElementById("retryLevelBtn");
 
-  function tierMarks(n) { return n <= 1 ? 10 : n === 2 ? 10 : 5; }
+  function tierMarks(n) { return Math.max(5, 10 - Math.max(0, n - 1)); }
 
   retryLevelBtn.addEventListener("click", () => window.location.reload());
 
@@ -464,12 +462,9 @@ if (user) {
 
   function marksBlurb(marks, attempts, revealed) {
     if (marks === 10) return "Perfect — solved on the first try, no penalties.";
-    if (marks === 8) return revealCount === 2
-      ? "Solved after using \"Show answer\" twice."
-      : "Nicely done — solved after one recheck.";
-    if (revealCount >= 3) return `Solved after using "Show answer" ${revealCount} times.`;
-    if (revealed) return "Solved after viewing the revealed answer.";
-    return `Solved after ${attempts} checks.`;
+    const worseCount = Math.max(attempts, revealCount);
+    if (revealCount > attempts) return `Solved after using "Show answer" ${revealCount} time${revealCount === 1 ? "" : "s"}.`;
+    return `Solved after ${attempts} check${attempts === 1 ? "" : "s"}.`;
   }
 
   function showResultModal({ correctSlots, totalSlots, finalScore, timeTakenSec, level, justCertified, marks, checkAttempts, answerRevealedAny }) {
