@@ -26,7 +26,8 @@
    Leave CLOUD_DB_URL as "" to keep the game fully local/offline, exactly
    like before.
    ========================================================================= */
-const CLOUD_DB_URL = "https://ecgrhythm-16755-default-rtdb.firebaseio.com/";
+
+const CLOUD_DB_URL = ""; // e.g. "https://your-project-id-default-rtdb.firebaseio.com"
 
 const LS_USER = "ecg_current_user";
 const LS_LEADERBOARD = "ecg_leaderboard";
@@ -40,7 +41,7 @@ function getCurrentUser() {
   try { return JSON.parse(sessionStorage.getItem(LS_USER)); } catch (e) { return null; }
 }
 function setCurrentUser(name) {
-  sessionStorage.setItem(LS_USER, JSON.stringify({ name, isAdmin: name.trim().toLowerCase() === "adminisnarmi" }));
+  sessionStorage.setItem(LS_USER, JSON.stringify({ name, isAdmin: name.trim().toLowerCase() === "admin" }));
 }
 function logout() {
   sessionStorage.removeItem(LS_USER);
@@ -247,10 +248,11 @@ function getPlayerLeaderboard() {
   const rows = getLeaderboard();
   const byPlayer = {};
   rows.forEach((r) => {
-    if (!byPlayer[r.name]) byPlayer[r.name] = { name: r.name, bestByLevel: {}, bestSingle: 0, lastPlayed: r.timestamp, attempts: 0 };
+    if (!byPlayer[r.name]) byPlayer[r.name] = { name: r.name, bestByLevel: {}, bestMarksByLevel: {}, bestSingle: 0, lastPlayed: r.timestamp, attempts: 0 };
     const p = byPlayer[r.name];
     p.attempts++;
     if (!p.bestByLevel[r.level] || r.score > p.bestByLevel[r.level]) p.bestByLevel[r.level] = r.score;
+    if (r.marks != null && (!p.bestMarksByLevel[r.level] || r.marks > p.bestMarksByLevel[r.level])) p.bestMarksByLevel[r.level] = r.marks;
     if (r.score > p.bestSingle) p.bestSingle = r.score;
     if (new Date(r.timestamp) > new Date(p.lastPlayed)) p.lastPlayed = r.timestamp;
   });
@@ -258,13 +260,15 @@ function getPlayerLeaderboard() {
     .map((p) => ({
       ...p,
       totalPoints: Object.values(p.bestByLevel).reduce((a, b) => a + b, 0),
+      totalMarks: Object.values(p.bestMarksByLevel).reduce((a, b) => a + b, 0),
+      maxMarks: LEVELS.length * 10,
       levelsPlayed: Object.keys(p.bestByLevel).length,
     }))
     .sort((a, b) => b.totalPoints - a.totalPoints);
 }
 function exportLeaderboardCSV() {
   const rows = getLeaderboard();
-  const headers = ["name", "level", "score", "correct", "total", "timeTakenSec", "timestamp"];
+  const headers = ["name", "level", "score", "marks", "correct", "total", "timeTakenSec", "timestamp"];
   const csv = [headers.join(",")].concat(
     rows.map((r) => headers.map((h) => JSON.stringify(r[h] ?? "")).join(","))
   ).join("\n");
