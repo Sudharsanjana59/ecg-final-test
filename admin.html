@@ -236,12 +236,33 @@
     document.getElementById("exportCsv").addEventListener("click", () => {
       downloadFile("ecg_leaderboard.csv", exportLeaderboardCSV(), "text/csv");
     });
-    document.getElementById("clearData").addEventListener("click", () => {
-      if (confirm("This will permanently clear all leaderboard and progress data on this device. Continue?")) {
-        localStorage.removeItem("ecg_leaderboard");
-        localStorage.removeItem("ecg_progress");
-        renderBoard();
+    document.getElementById("clearData").addEventListener("click", async () => {
+      const msg = cloudEnabled()
+        ? "This will permanently clear all leaderboard, progress, and certificate data for EVERY device (shared cloud store included). Continue?"
+        : "This will permanently clear all leaderboard and progress data on this device. Continue?";
+      if (!confirm(msg)) return;
+
+      const btn = document.getElementById("clearData");
+      btn.disabled = true;
+      btn.textContent = "Clearing…";
+
+      if (cloudEnabled()) {
+        // Wipe the shared cloud store first so other devices stop
+        // re-downloading the old data next time they sync.
+        await Promise.all([
+          cloudDelete("/leaderboard"),
+          cloudDelete("/progress"),
+          cloudDelete("/certificates"),
+        ]);
       }
+
+      localStorage.removeItem("ecg_leaderboard");
+      localStorage.removeItem("ecg_progress");
+      localStorage.removeItem("ecg_certificates");
+
+      btn.disabled = false;
+      btn.textContent = "Clear all data";
+      renderBoard();
     });
   }
 </script>
