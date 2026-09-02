@@ -313,7 +313,6 @@ if (user) {
       const correctPiece = pieceForSeg[s];
       if (correctPiece) placeInSlot(correctPiece, slotEl);
     });
-    fixOrderCount++;
     updateProgress();
     evaluateCard(card);
     refreshBanner();
@@ -394,14 +393,13 @@ if (user) {
 
   // ---- submit: repeatable "Check answers" -> finalize once everything is correct ----
   // Marks (out of 10) reward getting there with the fewest checks AND the fewest
-  // assists used ("Fix order" or "Show answer") — whichever signal is worse drags
-  // the marks down:
-  //   1 attempt (of any kind)      -> 10
-  //   2 attempts                   -> 8
-  //   3+ attempts                  -> 5
+  // "Show answer" reveals — whichever signal is worse drags the marks down.
+  // "Fix order" is free — it never affects marks.
+  //   1 attempt (of either kind)      -> 10
+  //   2 attempts                      -> 8
+  //   3+ attempts                     -> 5
   let checkAttempts = 0;
   let revealCount = 0;
-  let fixOrderCount = 0;
   let answerRevealedAny = false;
   const submitBtn = document.getElementById("submitBtn");
   const retryLevelBtn = document.getElementById("retryLevelBtn");
@@ -445,7 +443,7 @@ if (user) {
     const finalScore = Math.round(liveScore * accuracy);
     document.getElementById("scorePreview").textContent = finalScore;
 
-    const marks = Math.min(tierMarks(checkAttempts), tierMarks(revealCount), tierMarks(fixOrderCount));
+    const marks = Math.min(tierMarks(checkAttempts), tierMarks(revealCount));
 
     addLeaderboardEntry({
       name: user.name,
@@ -466,13 +464,10 @@ if (user) {
 
   function marksBlurb(marks, attempts, revealed) {
     if (marks === 10) return "Perfect — solved on the first try, no penalties.";
-    if (marks === 8) {
-      if (revealCount === 2) return "Solved after using \"Show answer\" twice.";
-      if (fixOrderCount === 2) return "Solved after using \"Fix order\" twice.";
-      return "Nicely done — solved after one recheck.";
-    }
+    if (marks === 8) return revealCount === 2
+      ? "Solved after using \"Show answer\" twice."
+      : "Nicely done — solved after one recheck.";
     if (revealCount >= 3) return `Solved after using "Show answer" ${revealCount} times.`;
-    if (fixOrderCount >= 3) return `Solved after using "Fix order" ${fixOrderCount} times.`;
     if (revealed) return "Solved after viewing the revealed answer.";
     return `Solved after ${attempts} checks.`;
   }
