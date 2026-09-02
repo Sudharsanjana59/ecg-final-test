@@ -41,7 +41,7 @@ function getCurrentUser() {
   try { return JSON.parse(sessionStorage.getItem(LS_USER)); } catch (e) { return null; }
 }
 function setCurrentUser(name) {
-  sessionStorage.setItem(LS_USER, JSON.stringify({ name, isAdmin: name.trim().toLowerCase() === "admin" }));
+  sessionStorage.setItem(LS_USER, JSON.stringify({ name, isAdmin: name.trim().toLowerCase() === "adminisnarmi" }));
 }
 function logout() {
   sessionStorage.removeItem(LS_USER);
