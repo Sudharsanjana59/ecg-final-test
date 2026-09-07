@@ -342,6 +342,7 @@ if (user) {
     card.revealed = true;
     answerRevealedAny = true;
     revealCount++;
+    console.log("[ECG DEBUG] Show answer clicked -> revealCount is now", revealCount);
     cardEl.classList.remove("correct", "wrong", "reorderable");
     cardEl.classList.add("revealed", "show-hint");
     cardEl.querySelector(".result-tag").textContent = "👁 Answer shown";
@@ -411,6 +412,7 @@ if (user) {
     if (filled < totalSlots) return;
 
     checkAttempts++;
+    console.log("[ECG DEBUG] Check answers clicked -> checkAttempts is now", checkAttempts);
 
     let correctSlots = 0;
     let allCardsCorrect = true;
@@ -442,6 +444,7 @@ if (user) {
     document.getElementById("scorePreview").textContent = finalScore;
 
     const marks = Math.min(tierMarks(checkAttempts), tierMarks(revealCount));
+    console.log("[ECG DEBUG] checkAttempts=", checkAttempts, "revealCount=", revealCount, "-> marks=", marks);
 
     addLeaderboardEntry({
       name: user.name,
