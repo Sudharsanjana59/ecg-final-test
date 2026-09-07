@@ -398,7 +398,16 @@ if (user) {
   // marks at all, no matter how many times they're used:
   //   Check #1 -> 10   Check #2 -> 10   Check #3 -> 9   Check #4 -> 8
   //   Check #5 -> 7 ... continues down 1 per check, floor of 5.
-  let checkAttempts = 0;
+  // "Retry level" reloads the page, which would normally wipe checkAttempts
+  // back to 0 — that made it a free way to dodge the marks penalty. Instead,
+  // the attempt count is carried across the reload (and this retry itself
+  // counts as one more attempt) via sessionStorage, keyed per level so it
+  // never leaks into a different level or a later, unrelated visit. The key
+  // is read once and immediately cleared, so it only affects the very next
+  // page load triggered by this button.
+  const retryCountKey = `ecg_retry_attempts_level_${level.level}`;
+  let checkAttempts = parseInt(sessionStorage.getItem(retryCountKey) || "0", 10);
+  sessionStorage.removeItem(retryCountKey);
   let revealCount = 0;
   let answerRevealedAny = false;
   const submitBtn = document.getElementById("submitBtn");
@@ -409,7 +418,13 @@ if (user) {
     return Math.max(5, 10 - (n - 2));  // 3rd check onward: -1 per check, floor 5
   }
 
-  retryLevelBtn.addEventListener("click", () => window.location.reload());
+  retryLevelBtn.addEventListener("click", () => {
+    // Retrying counts as one more attempt against the marks, same as an
+    // extra wrong "Check answers" click would — save it before the reload
+    // wipes everything, so the next page load picks up where this left off.
+    sessionStorage.setItem(retryCountKey, String(checkAttempts + 1));
+    window.location.reload();
+  });
 
   submitBtn.addEventListener("click", () => {
     const filled = document.querySelectorAll(".slot.filled").length;
