@@ -396,8 +396,8 @@ if (user) {
   // Marks (out of 10), based ONLY on how many times "Check answers" was
   // clicked (checkAttempts) — "Fix order" and "Show answer" never affect
   // marks at all, no matter how many times they're used:
-  //   Check #1 -> 10   Check #2 -> 9   Check #3 -> 8   Check #4 -> 7
-  //   Check #5 and any check after that -> 5 (floor)
+  //   Check #1 -> 10   Check #2 -> 10   Check #3 -> 9   Check #4 -> 8
+  //   Check #5 -> 7 ... continues down 1 per check, floor of 5.
   let checkAttempts = 0;
   let revealCount = 0;
   let answerRevealedAny = false;
@@ -405,11 +405,8 @@ if (user) {
   const retryLevelBtn = document.getElementById("retryLevelBtn");
 
   function marksForAttempts(n) {
-    if (n <= 1) return 10;
-    if (n === 2) return 9;
-    if (n === 3) return 8;
-    if (n === 4) return 7;
-    return 5; // attempt #5 and beyond
+    if (n <= 2) return 10;             // 1st and 2nd check both still full marks
+    return Math.max(5, 10 - (n - 2));  // 3rd check onward: -1 per check, floor 5
   }
 
   retryLevelBtn.addEventListener("click", () => window.location.reload());
