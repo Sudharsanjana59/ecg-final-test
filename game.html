@@ -393,20 +393,19 @@ if (user) {
   }
 
   // ---- submit: repeatable "Check answers" -> finalize once everything is correct ----
-  // Marks (out of 10), based ONLY on how many times "Check answers" was
-  // clicked (checkAttempts) — "Fix order" and "Show answer" never affect
-  // marks at all, no matter how many times they're used:
-  //   Check #1 -> 10   Check #2 -> 10   Check #3 -> 9   Check #4 -> 8
-  //   Check #5 -> 7 ... continues down 1 per check, floor of 5.
-  // "Retry level" reloads the page, which would normally wipe checkAttempts
-  // back to 0 — that made it a free way to dodge the marks penalty. Instead,
-  // the attempt count is carried across the reload (and this retry itself
-  // counts as one more attempt) via sessionStorage, keyed per level so it
-  // never leaks into a different level or a later, unrelated visit. The key
-  // is read once and immediately cleared, so it only affects the very next
-  // page load triggered by this button.
+  // Marks (out of 10) are based ONLY on how many times "Retry level" has
+  // been clicked for this level — "Check answers" and "Fix order" are both
+  // completely free, no matter how many times either is used:
+  //   0 or 1 retries -> 10   2 retries -> 9   3 retries -> 8
+  //   4 retries -> 7 ... continues down 1 per retry, floor of 5.
+  // "Retry level" reloads the page, so the retry count is carried across
+  // the reload via sessionStorage, keyed per level so it never leaks into
+  // a different level or a later, unrelated visit. The key is read once
+  // and immediately cleared, so it only affects the very next page load
+  // triggered by this button.
   const retryCountKey = `ecg_retry_attempts_level_${level.level}`;
-  let checkAttempts = parseInt(sessionStorage.getItem(retryCountKey) || "0", 10);
+  let checkAttempts = 0; // just used for the on-screen "Check N:" banner text, not marks
+  let retryClicks = parseInt(sessionStorage.getItem(retryCountKey) || "0", 10);
   sessionStorage.removeItem(retryCountKey);
   let revealCount = 0;
   let answerRevealedAny = false;
@@ -414,15 +413,14 @@ if (user) {
   const retryLevelBtn = document.getElementById("retryLevelBtn");
 
   function marksForAttempts(n) {
-    if (n <= 2) return 10;             // 1st and 2nd check both still full marks
-    return Math.max(5, 10 - (n - 2));  // 3rd check onward: -1 per check, floor 5
+    if (n <= 1) return 10;             // solved with 0 or 1 retries used
+    return Math.max(5, 10 - (n - 1));  // each retry after that: -1, floor 5
   }
 
   retryLevelBtn.addEventListener("click", () => {
-    // Retrying counts as one more attempt against the marks, same as an
-    // extra wrong "Check answers" click would — save it before the reload
-    // wipes everything, so the next page load picks up where this left off.
-    sessionStorage.setItem(retryCountKey, String(checkAttempts + 1));
+    // Save the incremented retry count before the reload wipes everything,
+    // so the next page load picks up where this left off.
+    sessionStorage.setItem(retryCountKey, String(retryClicks + 1));
     window.location.reload();
   });
 
@@ -431,7 +429,7 @@ if (user) {
     if (filled < totalSlots) return;
 
     checkAttempts++;
-    console.log("[ECG DEBUG] Check answers clicked -> checkAttempts is now", checkAttempts);
+    console.log("[ECG DEBUG] Check answers clicked (free, no marks effect) -> checkAttempts is now", checkAttempts);
 
     let correctSlots = 0;
     let allCardsCorrect = true;
@@ -444,7 +442,7 @@ if (user) {
 
     if (!allCardsCorrect) {
       // Stay interactive: fix pieces, use Fix order / Show answer, then check again —
-      // or tap "Retry level" for a clean restart.
+      // or tap "Retry level" for a clean restart (this is the only thing that costs marks).
       document.getElementById("scorePreview").textContent = liveScore;
       retryLevelBtn.style.display = "inline-flex";
       return;
@@ -462,8 +460,8 @@ if (user) {
     const finalScore = Math.round(liveScore * accuracy);
     document.getElementById("scorePreview").textContent = finalScore;
 
-    const marks = marksForAttempts(checkAttempts);
-    console.log("[ECG DEBUG] checkAttempts=", checkAttempts, "revealCount=", revealCount, "(revealCount has no effect on marks) -> marks=", marks);
+    const marks = marksForAttempts(retryClicks + 1);
+    console.log("[ECG DEBUG] retryClicks=", retryClicks, "checkAttempts=", checkAttempts, "revealCount=", revealCount, "(only retryClicks affects marks) -> marks=", marks);
 
     addLeaderboardEntry({
       name: user.name,
@@ -479,15 +477,15 @@ if (user) {
     launchConfetti();
     let justCertified = false;
     if (level.level === LEVELS.length) { getOrIssueCertificate(user.name); justCertified = true; }
-    showResultModal({ correctSlots, totalSlots, finalScore, timeTakenSec, level, justCertified, marks, checkAttempts, answerRevealedAny });
+    showResultModal({ correctSlots, totalSlots, finalScore, timeTakenSec, level, justCertified, marks, retryClicks });
   });
 
-  function marksBlurb(marks, attempts) {
-    if (attempts <= 1) return "Perfect — solved on the first try, no penalties.";
-    return `Solved on check #${attempts}.`;
+  function marksBlurb(marks, retries) {
+    if (retries <= 0) return "Perfect — solved without needing \"Retry level\", no penalties.";
+    return `Solved after using "Retry level" ${retries} time${retries === 1 ? "" : "s"}.`;
   }
 
-  function showResultModal({ correctSlots, totalSlots, finalScore, timeTakenSec, level, justCertified, marks, checkAttempts, answerRevealedAny }) {
+  function showResultModal({ correctSlots, totalSlots, finalScore, timeTakenSec, level, justCertified, marks, retryClicks }) {
     const backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     const isFinalLevel = level.level === LEVELS.length;
@@ -505,7 +503,7 @@ if (user) {
         <h2 style="margin:10px 0 4px;">${justCertified ? "Course complete!" : "Perfectly rebuilt!"}</h2>
         <div class="score-num">${finalScore}</div>
         <p>${correctSlots}/${totalSlots} pieces correct · ${formatTime(timeTakenSec)} elapsed</p>
-        <p style="margin-top:4px;">Marks: <b>${marks}/10</b> — ${marksBlurb(marks, checkAttempts)}</p>
+        <p style="margin-top:4px;">Marks: <b>${marks}/10</b> — ${marksBlurb(marks, retryClicks)}</p>
         ${justCertified ? `<p style="color:var(--accent, var(--trace-green)); font-weight:600;">You've cleared all ${LEVELS.length} rhythms — your certificate is ready.</p>` : ""}
         <div class="hstack" style="justify-content:center; margin-top:18px; gap:10px;">
           ${actionsHtml}
