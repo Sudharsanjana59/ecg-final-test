@@ -1,4 +1,4 @@
-/* =========================================================================
+ /* =========================================================================
    ECG-SVG.JS
    Procedurally draws each ECG rhythm as an SVG path, so the game never
    depends on external/copyrighted medical images. Every waveform is drawn
@@ -48,7 +48,10 @@ function normalBeat(t, opts) {
   y += triangle(t, 0.32, 0.02, qAmp);   // Q
   y += triangle(t, 0.345, 0.02, rAmp);  // R
   y += triangle(t, 0.37, 0.02, sAmp);   // S
-  // ST segment lift (used for STEMI) - trapezoid plateau between QRS and T
+  // ST segment lift (used for STEMI) - trapezoid plateau between QRS and T.
+  // Also reused with a negative value for ST depression (used for NSTEMI) -
+  // the sign of stLift determines whether the plateau sits above or below
+  // baseline; the shape logic itself doesn't care which direction it goes.
   if (stLift) {
     const stStart = 0.39, stEnd = tC - tW * 0.6;
     if (t >= stStart && t <= stEnd) y += stLift;
@@ -214,6 +217,28 @@ function generateWaveformPoints(typeId, width, height, cycles) {
       for (let x = 0; x <= width; x += step) {
         const t = (x % cycleLen) / cycleLen;
         push(x, normalBeat(t, { tC: 0.80, tW: 0.16, tA: 12 }));
+      }
+      break;
+    }
+    case "STEMI": {
+      // ST-elevation MI: normal-ish QRS, but the ST segment lifts clearly
+      // above baseline and blends straight into a tall, peaked T wave -
+      // the classic "tombstone" look.
+      const cycleLen = width / 4.8;
+      for (let x = 0; x <= width; x += step) {
+        const t = (x % cycleLen) / cycleLen;
+        push(x, normalBeat(t, { stLift: 16, tA: 18, tW: 0.06 }));
+      }
+      break;
+    }
+    case "NSTEMI": {
+      // Non-ST-elevation MI: normal QRS, but the ST segment sags below
+      // baseline (horizontal/downsloping depression) and the T wave
+      // flips downward - depression + inversion, with no elevation at all.
+      const cycleLen = width / 4.8;
+      for (let x = 0; x <= width; x += step) {
+        const t = (x % cycleLen) / cycleLen;
+        push(x, normalBeat(t, { stLift: -9, tA: -9, tW: 0.06 }));
       }
       break;
     }
