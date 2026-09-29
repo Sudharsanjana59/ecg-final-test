@@ -6,12 +6,11 @@
    An admin can edit waveform definitions, hints, and level composition here
    without touching any game logic.
 
-   22 rhythms, 22 levels — one unique topic per level, no repeats: normal
+   20 rhythms, 20 levels — one unique topic per level, no repeats: normal
    sinus rhythm, atrial flutter, atrial fibrillation, ventricular
    tachycardia, ventricular fibrillation, torsades de pointes, 2nd-degree
    AV block, complete heart block (AV dissociation), RBBB, LBBB, Brugada
    syndrome, Long QT syndrome, WPW syndrome, sick sinus syndrome, LVH, RVH,
-   premature atrial contraction, premature ventricular contraction,
    bigeminy, trigeminy, ST-elevation MI (STEMI), and non-ST-elevation MI
    (NSTEMI).
    ========================================================================= */
@@ -33,10 +32,8 @@ const ECG_TYPES = {
   SSS:      { id: "SSS",      name: "Sick Sinus Syndrome",              difficulty: "hard",   rate: "Variable, pauses",     hint: "Normal beats run fine, then the sinus node simply goes quiet — a long flat pause with no P wave and no QRS before it resumes." },
   LVH:      { id: "LVH",      name: "Left Ventricular Hypertrophy",     difficulty: "medium", rate: "60-100 bpm",     hint: "Unusually tall, high-voltage QRS spikes, with the ST segment sagging down into an inverted T wave (the 'strain' pattern)." },
   RVH:      { id: "RVH",      name: "Right Ventricular Hypertrophy",    difficulty: "medium", rate: "60-100 bpm",     hint: "A tall, dominant R wave with almost no S wave afterward, plus a mildly flipped T wave — voltage shifted the opposite way from LVH." },
-  PAC:      { id: "PAC",      name: "Premature Atrial Contraction",     difficulty: "easy",   rate: "60-100 bpm + early beats",     hint: "An early beat shows up with an odd, differently-shaped P wave but a normal narrow QRS, then only a short pause before the rhythm resets." },
-  PVC:      { id: "PVC",      name: "Premature Ventricular Contraction", difficulty: "medium", rate: "60-100 bpm + early beats",     hint: "An early, wide, bizarre QRS appears with no P wave in front of it at all, followed by a longer 'compensatory' pause before the normal rhythm resumes." },
-  BIGEM:    { id: "BIGEM",    name: "Bigeminy",                         difficulty: "medium", rate: "Alternating",     hint: "Every single normal beat is immediately followed by a wide PVC — normal, PVC, normal, PVC, on repeat, two beats at a time." },
-  TRIGEM:   { id: "TRIGEM",   name: "Trigeminy",                        difficulty: "medium", rate: "Grouped in 3s",     hint: "Two normal beats, then a wide PVC, then it repeats — a steady grouping of three beats where every third one is abnormal." },
+  BIGEM:    { id: "BIGEM",    name: "Bigeminy",                         difficulty: "medium", rate: "Alternating",     hint: "Every single normal beat is immediately followed by a wide, bizarre-looking premature beat — normal, abnormal, normal, abnormal, on repeat, two beats at a time." },
+  TRIGEM:   { id: "TRIGEM",   name: "Trigeminy",                        difficulty: "medium", rate: "Grouped in 3s",     hint: "Two normal beats, then a wide, bizarre-looking premature beat, then it repeats — a steady grouping of three beats where every third one is abnormal." },
   STEMI:    { id: "STEMI",    name: "ST-Elevation MI (STEMI)",          difficulty: "critical", rate: "60-100 bpm",     hint: "A normal-looking QRS is followed by an ST segment that lifts clearly above the baseline and blends straight into a tall, peaked T wave — a classic 'tombstone' pattern." },
   NSTEMI:   { id: "NSTEMI",   name: "Non-ST-Elevation MI (NSTEMI)",     difficulty: "hard",   rate: "60-100 bpm",     hint: "Normal QRS, but the ST segment sags below the baseline and the T wave flips downward — depression and inversion, with no elevation at all." },
 };
@@ -62,12 +59,10 @@ const LEVELS = [
   { level: 14, title: "Sick Sinus Syndrome",                description: "The sinus node itself drops out, leaving a long silent pause.",           waveforms: ["SSS"],     extraDistractors: ["NSR", "AFIB"],    segments: 5, timeBonusSeconds: 110, orderHint: "Slot 1 is a normal beat — the long flat pause with no P wave or QRS shows up later." },
   { level: 15, title: "Left Ventricular Hypertrophy",       description: "Tall, high-voltage QRS spikes with an ST/T 'strain' pattern.",            waveforms: ["LVH"],     extraDistractors: ["RVH", "BRUGADA"], segments: 4, timeBonusSeconds: 90,  orderHint: "Slot 1 already shows the taller-than-normal QRS spike and the sagging ST/T that follows it." },
   { level: 16, title: "Right Ventricular Hypertrophy",      description: "A dominant R wave with almost no S wave, plus a mild T-wave flip.",       waveforms: ["RVH"],     extraDistractors: ["LVH", "BRUGADA"], segments: 4, timeBonusSeconds: 90,  orderHint: "Slot 1 already shows the tall, dominant R wave with barely any S wave dipping after it." },
-  { level: 17, title: "Premature Atrial Contraction",       description: "An early beat with an odd P wave, then a short reset.",                   waveforms: ["PAC"],     extraDistractors: ["PVC", "NSR"],     segments: 5, timeBonusSeconds: 95,  orderHint: "Slot 1 opens as an ordinary beat — the early, oddly-shaped P wave shows up later in the strip." },
-  { level: 18, title: "Premature Ventricular Contraction",  description: "An early, wide, bizarre beat with no P wave in front of it.",             waveforms: ["PVC"],     extraDistractors: ["BIGEM", "TRIGEM"], segments: 5, timeBonusSeconds: 100, orderHint: "Slot 1 opens as an ordinary beat — the wide bizarre PVC and its pause show up later." },
-  { level: 19, title: "Bigeminy",                           description: "Every normal beat is paired with a PVC, on repeat.",                     waveforms: ["BIGEM"],   extraDistractors: ["TRIGEM", "PVC"],  segments: 5, timeBonusSeconds: 105, orderHint: "Slot 1 is a normal beat — the paired PVC follows immediately after it." },
-  { level: 20, title: "Trigeminy",                          description: "Two normal beats, then a PVC, repeating in threes.",                     waveforms: ["TRIGEM"],  extraDistractors: ["BIGEM", "PVC"],   segments: 6, timeBonusSeconds: 115, orderHint: "Slot 1 is the first of two normal beats before the PVC lands." },
-  { level: 21, title: "ST-Elevation MI (STEMI)",            description: "A clear dome of ST elevation rises right after the QRS.",                waveforms: ["STEMI"],   extraDistractors: ["NSTEMI", "BRUGADA"], segments: 5, timeBonusSeconds: 105, orderHint: "Slot 1 already shows the ST segment lifted above baseline — the elevation is present from the very start." },
-  { level: 22, title: "Non-ST-Elevation MI (NSTEMI)",       description: "The ST segment sags down and the T wave inverts — no elevation.",         waveforms: ["NSTEMI"],  extraDistractors: ["STEMI", "LVH"],   segments: 5, timeBonusSeconds: 105, orderHint: "Slot 1 already shows the depressed ST segment and inverted T wave from the very start." },
+  { level: 17, title: "Bigeminy",                           description: "Every normal beat is paired with an abnormal beat, on repeat.",           waveforms: ["BIGEM"],   extraDistractors: ["TRIGEM"],  segments: 5, timeBonusSeconds: 105, orderHint: "Slot 1 is a normal beat — the paired abnormal beat follows immediately after it." },
+  { level: 18, title: "Trigeminy",                          description: "Two normal beats, then an abnormal beat, repeating in threes.",           waveforms: ["TRIGEM"],  extraDistractors: ["BIGEM"],   segments: 6, timeBonusSeconds: 115, orderHint: "Slot 1 is the first of two normal beats before the abnormal beat lands." },
+  { level: 19, title: "ST-Elevation MI (STEMI)",            description: "A clear dome of ST elevation rises right after the QRS.",                waveforms: ["STEMI"],   extraDistractors: ["NSTEMI", "BRUGADA"], segments: 5, timeBonusSeconds: 105, orderHint: "Slot 1 already shows the ST segment lifted above baseline — the elevation is present from the very start." },
+  { level: 20, title: "Non-ST-Elevation MI (NSTEMI)",       description: "The ST segment sags down and the T wave inverts — no elevation.",         waveforms: ["NSTEMI"],  extraDistractors: ["STEMI", "LVH"],   segments: 5, timeBonusSeconds: 105, orderHint: "Slot 1 already shows the depressed ST segment and inverted T wave from the very start." },
 ];
 
 /* ---------------------------------------------------------------------
@@ -78,8 +73,8 @@ const LEVELS = [
 const LEVEL_ICONS = {
   1: "🫀", 2: "🪚", 3: "🌊", 4: "🏃", 5: "💥", 6: "🌀",
   7: "📉", 8: "🔌", 9: "🐇", 10: "🌐", 11: "🧬", 12: "⏱️",
-  13: "🗡️", 14: "⏳", 15: "⬆️", 16: "➡️", 17: "〰️", 18: "⚡",
-  19: "👯", 20: "🔺", 21: "🌋", 22: "🕳️",
+  13: "🗡️", 14: "⏳", 15: "⬆️", 16: "➡️",
+  17: "👯", 18: "🔺", 19: "🌋", 20: "🕳️",
 };
 
 function themeForLevel(levelNum) {
