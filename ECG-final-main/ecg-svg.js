@@ -48,7 +48,10 @@ function normalBeat(t, opts) {
   y += triangle(t, 0.32, 0.02, qAmp);   // Q
   y += triangle(t, 0.345, 0.02, rAmp);  // R
   y += triangle(t, 0.37, 0.02, sAmp);   // S
-  // ST segment lift (used for STEMI) - trapezoid plateau between QRS and T
+  // ST segment lift (used for STEMI) - trapezoid plateau between QRS and T.
+  // Also reused with a negative value for ST depression (used for NSTEMI) -
+  // the sign of stLift determines whether the plateau sits above or below
+  // baseline; the shape logic itself doesn't care which direction it goes.
   if (stLift) {
     const stStart = 0.39, stEnd = tC - tW * 0.6;
     if (t >= stStart && t <= stEnd) y += stLift;
@@ -217,6 +220,28 @@ function generateWaveformPoints(typeId, width, height, cycles) {
       }
       break;
     }
+    case "STEMI": {
+      // ST-elevation MI: normal-ish QRS, but the ST segment lifts clearly
+      // above baseline and blends straight into a tall, peaked T wave -
+      // the classic "tombstone" look.
+      const cycleLen = width / 4.8;
+      for (let x = 0; x <= width; x += step) {
+        const t = (x % cycleLen) / cycleLen;
+        push(x, normalBeat(t, { stLift: 16, tA: 18, tW: 0.06 }));
+      }
+      break;
+    }
+    case "NSTEMI": {
+      // Non-ST-elevation MI: normal QRS, but the ST segment sags below
+      // baseline (horizontal/downsloping depression) and the T wave
+      // flips downward - depression + inversion, with no elevation at all.
+      const cycleLen = width / 4.8;
+      for (let x = 0; x <= width; x += step) {
+        const t = (x % cycleLen) / cycleLen;
+        push(x, normalBeat(t, { stLift: -9, tA: -9, tW: 0.06 }));
+      }
+      break;
+    }
     case "RBBB": {
       // wide QRS with a double-humped "rabbit ears" rSR' pattern, a wide
       // terminal S, and a secondary T-wave flip after the notch.
@@ -293,82 +318,23 @@ function generateWaveformPoints(typeId, width, height, cycles) {
       }
       break;
     }
-    case "PAC": {
-      // premature atrial contraction: an early beat with an odd-shaped,
-      // smaller/later P wave but an otherwise normal narrow QRS, then a
-      // short, non-compensatory pause before the sinus rhythm resets.
-      const cycleLen = width / 4.8;
-      let x = 0, beatIndex = 0;
-      while (x <= width) {
-        const isPAC = beatIndex % 5 === 4;
-        if (isPAC) {
-          const pacLen = cycleLen * 0.62; // arrives early
-          for (let lx = 0; lx <= pacLen && x + lx <= width; lx += step) {
-            const t = lx / pacLen;
-            push(x + lx, normalBeat(t, { pC: 0.24, pW: 0.05, pA: 6 })); // odd, later/smaller P
-          }
-          x += pacLen;
-          const pauseLen = cycleLen * 0.55; // short, non-compensatory pause
-          for (let lx = 0; lx <= pauseLen && x + lx <= width; lx += step) push(x + lx, 0);
-          x += pauseLen;
-        } else {
-          for (let lx = 0; lx <= cycleLen && x + lx <= width; lx += step) {
-            const t = lx / cycleLen;
-            push(x + lx, normalBeat(t));
-          }
-          x += cycleLen;
-        }
-        beatIndex++;
-      }
-      break;
-    }
-    case "PVC": {
-      // premature ventricular contraction: an early, wide, bizarre QRS
-      // with NO preceding P wave, a discordant T wave, then a longer
-      // compensatory pause before the normal rhythm resumes.
-      const cycleLen = width / 4.8;
-      let x = 0, beatIndex = 0;
-      while (x <= width) {
-        const isPVC = beatIndex % 5 === 4;
-        if (isPVC) {
-          const pvcLen = cycleLen * 0.8;
-          for (let lx = 0; lx <= pvcLen && x + lx <= width; lx += step) {
-            const t = lx / pvcLen;
-            let y = triangle(t, 0.30, 0.05, -10) + triangle(t, 0.40, 0.09, 52) + triangle(t, 0.52, 0.06, -20);
-            y += gauss(t, 0.75, 0.09, -16); // discordant T wave
-            push(x + lx, y);
-          }
-          x += pvcLen;
-          const pauseLen = cycleLen * 0.9; // compensatory pause
-          for (let lx = 0; lx <= pauseLen && x + lx <= width; lx += step) push(x + lx, 0);
-          x += pauseLen;
-        } else {
-          for (let lx = 0; lx <= cycleLen && x + lx <= width; lx += step) {
-            const t = lx / cycleLen;
-            push(x + lx, normalBeat(t));
-          }
-          x += cycleLen;
-        }
-        beatIndex++;
-      }
-      break;
-    }
     case "BIGEM": {
-      // bigeminy: every normal beat is immediately paired with a wide PVC -
-      // normal, PVC, normal, PVC, two beats at a time, no long pauses.
+      // bigeminy: every normal beat is immediately paired with a wide,
+      // bizarre premature beat - normal, abnormal, normal, abnormal, two
+      // beats at a time, no long pauses.
       const cycleLen = width / 4.6;
       let x = 0, beatIndex = 0;
       while (x <= width) {
-        const isPVC = beatIndex % 2 === 1;
-        if (isPVC) {
-          const pvcLen = cycleLen * 0.85;
-          for (let lx = 0; lx <= pvcLen && x + lx <= width; lx += step) {
-            const t = lx / pvcLen;
+        const isAbnormal = beatIndex % 2 === 1;
+        if (isAbnormal) {
+          const beatLen = cycleLen * 0.85;
+          for (let lx = 0; lx <= beatLen && x + lx <= width; lx += step) {
+            const t = lx / beatLen;
             let y = triangle(t, 0.30, 0.05, -10) + triangle(t, 0.40, 0.09, 50) + triangle(t, 0.52, 0.06, -18);
             y += gauss(t, 0.75, 0.09, -15);
             push(x + lx, y);
           }
-          x += pvcLen;
+          x += beatLen;
         } else {
           for (let lx = 0; lx <= cycleLen && x + lx <= width; lx += step) {
             const t = lx / cycleLen;
@@ -381,21 +347,22 @@ function generateWaveformPoints(typeId, width, height, cycles) {
       break;
     }
     case "TRIGEM": {
-      // trigeminy: two normal beats, then a wide PVC, repeating in groups
-      // of three - a steadier, more spaced-out cousin of bigeminy.
+      // trigeminy: two normal beats, then a wide, bizarre premature beat,
+      // repeating in groups of three - a steadier, more spaced-out cousin
+      // of bigeminy.
       const cycleLen = width / 4.6;
       let x = 0, beatIndex = 0;
       while (x <= width) {
-        const isPVC = beatIndex % 3 === 2;
-        if (isPVC) {
-          const pvcLen = cycleLen * 0.85;
-          for (let lx = 0; lx <= pvcLen && x + lx <= width; lx += step) {
-            const t = lx / pvcLen;
+        const isAbnormal = beatIndex % 3 === 2;
+        if (isAbnormal) {
+          const beatLen = cycleLen * 0.85;
+          for (let lx = 0; lx <= beatLen && x + lx <= width; lx += step) {
+            const t = lx / beatLen;
             let y = triangle(t, 0.30, 0.05, -10) + triangle(t, 0.40, 0.09, 50) + triangle(t, 0.52, 0.06, -18);
             y += gauss(t, 0.75, 0.09, -15);
             push(x + lx, y);
           }
-          x += pvcLen;
+          x += beatLen;
         } else {
           for (let lx = 0; lx <= cycleLen && x + lx <= width; lx += step) {
             const t = lx / cycleLen;
