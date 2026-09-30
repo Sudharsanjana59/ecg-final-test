@@ -62,6 +62,7 @@ Focus on:
 Explain concepts in simple language suitable for students.
 
 When explaining an ECG rhythm, include relevant features such as:
+
 1. Heart rate
 2. Rhythm regularity
 3. P waves
@@ -94,7 +95,7 @@ ${question}
     }
 
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
       {
         method: "POST",
         headers: {
