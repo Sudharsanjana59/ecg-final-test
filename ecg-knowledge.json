@@ -1,0 +1,142 @@
+[
+  {
+    "id": "NSR",
+    "name": "Normal Sinus Rhythm",
+    "rate": "60-100 bpm",
+    "difficulty": "easy",
+    "summary": "Regular rhythm, rate 60–100 bpm. Every P wave is followed by a QRS, every QRS by a T wave. Nothing irregular."
+  },
+  {
+    "id": "AFLUT",
+    "name": "Atrial Flutter",
+    "rate": "Variable, saw-tooth",
+    "difficulty": "hard",
+    "summary": "A fast, regular saw-tooth pattern between QRS complexes — like the teeth of a saw — instead of a flat baseline with P waves."
+  },
+  {
+    "id": "AFIB",
+    "name": "Atrial Fibrillation",
+    "rate": "Variable",
+    "difficulty": "medium",
+    "summary": "No true P waves — just a wobbly, fibrillating baseline. The spacing between QRS spikes is irregularly irregular."
+  },
+  {
+    "id": "VTACH",
+    "name": "Ventricular Tachycardia",
+    "rate": ">150 bpm",
+    "difficulty": "critical",
+    "summary": "Wide, tall, smooth sine-like complexes racing very fast, one after another, with no visible P waves at all."
+  },
+  {
+    "id": "VFIB",
+    "name": "Ventricular Fibrillation",
+    "rate": "None (chaotic)",
+    "difficulty": "critical",
+    "summary": "Completely chaotic squiggle — no recognizable P, QRS, or T at all. There is no organized rhythm left to name."
+  },
+  {
+    "id": "TDP",
+    "name": "Torsades de Pointes",
+    "rate": "Very fast, chaotic",
+    "difficulty": "critical",
+    "summary": "Looks like ventricular tachycardia, but the peaks visibly twist — growing and shrinking as they spiral around the baseline."
+  },
+  {
+    "id": "AVB2",
+    "name": "2nd-Degree AV Block",
+    "rate": "Variable, grouped",
+    "difficulty": "hard",
+    "summary": "Watch the PR gap: it grows a little longer with each beat until one QRS is dropped entirely — then the pattern resets (Wenckebach)."
+  },
+  {
+    "id": "AVB3",
+    "name": "Complete Heart Block (AV Dissociation)",
+    "rate": "Independent P & QRS rates",
+    "difficulty": "critical",
+    "summary": "P waves march through at their own steady beat, totally unrelated in timing to a separate, slower run of wide QRS complexes — the atria and ventricles have fully split apart."
+  },
+  {
+    "id": "RBBB",
+    "name": "Right Bundle Branch Block",
+    "rate": "60-100 bpm",
+    "difficulty": "hard",
+    "summary": "Wide QRS with a double-humped 'rabbit ears' R wave (rSR' pattern), followed by a wide terminal S and a flipped T wave."
+  },
+  {
+    "id": "LBBB",
+    "name": "Left Bundle Branch Block",
+    "rate": "60-100 bpm",
+    "difficulty": "hard",
+    "summary": "A very wide, broad, notched R wave with no small initial Q, and the T wave points the opposite way from the tall QRS."
+  },
+  {
+    "id": "BRUGADA",
+    "name": "Brugada Syndrome",
+    "rate": "60-100 bpm",
+    "difficulty": "critical",
+    "summary": "A normal-ish QRS is followed by a raised, dome-shaped ('coved') ST segment that curves straight into an inverted, downward T wave."
+  },
+  {
+    "id": "LQT",
+    "name": "Long QT Syndrome",
+    "rate": "60-100 bpm",
+    "difficulty": "hard",
+    "summary": "Normal-looking QRS, but everything from the QRS to the end of the T wave is stretched out much further than usual."
+  },
+  {
+    "id": "WPW",
+    "name": "Wolff–Parkinson–White Syndrome",
+    "rate": "60-100 bpm",
+    "difficulty": "hard",
+    "summary": "The PR gap is unusually short, and the QRS starts with a slow, slurred upstroke (a 'delta wave') before it shoots up."
+  },
+  {
+    "id": "SSS",
+    "name": "Sick Sinus Syndrome",
+    "rate": "Variable, pauses",
+    "difficulty": "hard",
+    "summary": "Normal beats run fine, then the sinus node simply goes quiet — a long flat pause with no P wave and no QRS before it resumes."
+  },
+  {
+    "id": "LVH",
+    "name": "Left Ventricular Hypertrophy",
+    "rate": "60-100 bpm",
+    "difficulty": "medium",
+    "summary": "Unusually tall, high-voltage QRS spikes, with the ST segment sagging down into an inverted T wave (the 'strain' pattern)."
+  },
+  {
+    "id": "RVH",
+    "name": "Right Ventricular Hypertrophy",
+    "rate": "60-100 bpm",
+    "difficulty": "medium",
+    "summary": "A tall, dominant R wave with almost no S wave afterward, plus a mildly flipped T wave — voltage shifted the opposite way from LVH."
+  },
+  {
+    "id": "BIGEM",
+    "name": "Bigeminy",
+    "rate": "Alternating",
+    "difficulty": "medium",
+    "summary": "Every single normal beat is immediately followed by a wide, bizarre-looking premature beat — normal, abnormal, normal, abnormal, on repeat, two beats at a time."
+  },
+  {
+    "id": "TRIGEM",
+    "name": "Trigeminy",
+    "rate": "Grouped in 3s",
+    "difficulty": "medium",
+    "summary": "Two normal beats, then a wide, bizarre-looking premature beat, then it repeats — a steady grouping of three beats where every third one is abnormal."
+  },
+  {
+    "id": "STEMI",
+    "name": "ST-Elevation MI (STEMI)",
+    "rate": "60-100 bpm",
+    "difficulty": "critical",
+    "summary": "A normal-looking QRS is followed by an ST segment that lifts clearly above the baseline and blends straight into a tall, peaked T wave — a classic 'tombstone' pattern."
+  },
+  {
+    "id": "NSTEMI",
+    "name": "Non-ST-Elevation MI (NSTEMI)",
+    "rate": "60-100 bpm",
+    "difficulty": "hard",
+    "summary": "Normal QRS, but the ST segment sags below the baseline and the T wave flips downward — depression and inversion, with no elevation at all."
+  }
+]
