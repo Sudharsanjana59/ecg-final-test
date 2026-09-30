@@ -6,7 +6,7 @@
  * in /worker (see worker/README.md).
  */
 (function () {
-  const WORKER_URL = "https://ecg-rhythm-tutor.YOUR-SUBDOMAIN.workers.dev"; // <-- change this after deploying
+  const WORKER_URL = "/api/chat";
 
   const history = []; // { role: "user"|"assistant", content: string }
   let sending = false;
