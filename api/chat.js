@@ -8,25 +8,35 @@ export default async function handler(req, res) {
   try {
     const { question, history = [] } = req.body || {};
 
-    if (!question) {
+    if (!question || typeof question !== "string") {
       return res.status(400).json({
-        error: "Please enter a question."
+        error: "Question is required"
       });
     }
 
-    const systemPrompt = `
-You are CardioTutor AI, a specialized educational tutor
-for cardiology and ECG learning.
+    const recentHistory = Array.isArray(history)
+      ? history.slice(-10)
+      : [];
 
-Your main subject is CARDIOLOGY.
+    const conversation = recentHistory
+      .map((msg) => {
+        const role =
+          msg.role === "assistant" ? "Tutor" : "Student";
 
-You can explain:
+        return `${role}: ${msg.content}`;
+      })
+      .join("\n");
+
+    const prompt = `
+You are CardioTutor AI inside the ECG Pulse Match educational game.
+
+You are an ECG and cardiology tutor.
+
+Focus on:
 - ECG interpretation
-- ECG rhythms
-- Arrhythmias
-- Atrial fibrillation
+- Normal sinus rhythm
 - Atrial flutter
-- SVT
+- Atrial fibrillation
 - Ventricular tachycardia
 - Ventricular fibrillation
 - Torsades de pointes
@@ -34,9 +44,9 @@ You can explain:
 - Complete heart block
 - RBBB
 - LBBB
-- WPW syndrome
 - Brugada syndrome
 - Long QT syndrome
+- WPW syndrome
 - Sick sinus syndrome
 - LVH
 - RVH
@@ -46,58 +56,64 @@ You can explain:
 - QT/QTc interval
 - ST segment
 - T waves
-- Cardiac anatomy
-- Cardiac physiology
-- Cardiac conduction system
+- Cardiac conduction
+- Basic cardiology
 
-Explain things clearly for students.
+Explain concepts in simple language suitable for students.
 
-For ECG rhythms, when appropriate explain:
-1. Rate
-2. Rhythm
+When explaining an ECG rhythm, include relevant features such as:
+1. Heart rate
+2. Rhythm regularity
 3. P waves
 4. PR interval
-5. QRS
-6. Important ECG findings
-7. How to recognize it
-8. Basic clinical significance
-
-If a question is unrelated to cardiology or ECG,
-politely say that you specialize in cardiology and ECG
-education and ask for a cardiology-related question.
+5. QRS width
+6. QT/QTc
+7. Characteristic ECG appearance
+8. How to recognize it
+9. Basic clinical significance
 
 Do not diagnose real patients.
-Do not present educational information as a medical diagnosis.
-For emergency symptoms, advise seeking appropriate medical care.
+This is an educational tutor, not a medical diagnostic service.
 
-You are an educational cardiology tutor.
+If the question is unrelated to ECG or cardiology,
+politely explain that you are focused on ECG and cardiology education.
+
+Previous conversation:
+${conversation}
+
+Student's question:
+${question}
 `;
 
-    const messages = [
-      {
-        role: "system",
-        content: systemPrompt
-      },
-      ...history.slice(-10),
-      {
-        role: "user",
-        content: question
-      }
-    ];
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        error: "GEMINI_API_KEY is not configured in Vercel."
+      });
+    }
 
     const response = await fetch(
-      "https://api.openai.com/v1/chat/completions",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+          "x-goog-api-key": apiKey
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: messages,
-          temperature: 0.3,
-          max_tokens: 600
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            maxOutputTokens: 600
+          }
         })
       }
     );
@@ -105,19 +121,29 @@ You are an educational cardiology tutor.
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("OpenAI error:", data);
+      console.error("Gemini API error:", data);
 
       return res.status(response.status).json({
-        error: data.error?.message || "OpenAI request failed"
+        error:
+          data.error?.message ||
+          "Gemini API request failed"
       });
     }
 
     const answer =
-      data.choices?.[0]?.message?.content ||
-      "Sorry, I couldn't generate an answer.";
+      data.candidates?.[0]?.content?.parts
+        ?.map((part) => part.text || "")
+        .join("")
+        .trim();
+
+    if (!answer) {
+      return res.status(500).json({
+        error: "No answer returned by Gemini."
+      });
+    }
 
     return res.status(200).json({
-      answer: answer,
+      answer,
       sources: []
     });
 
