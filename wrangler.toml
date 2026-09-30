@@ -1,0 +1,6 @@
+name = "ecg-rhythm-tutor"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# ANTHROPIC_API_KEY is a secret, not set here:
+#   wrangler secret put ANTHROPIC_API_KEY
