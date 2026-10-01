@@ -2,7 +2,7 @@
 
 /* ---------- Launcher ---------- */
 .ai-tutor-launcher {
-  position: fixed; right: 20px; bottom: 20px; z-index: 40;
+  position: fixed; right: 20px; bottom: 150px; z-index: 40;
   width: 56px; height: 56px; border-radius: 50%;
   background: var(--bg-panel); border: 1px solid var(--border-soft);
   color: var(--ui-white); font-size: 22px; cursor: pointer;
@@ -30,12 +30,11 @@
   animation: aiHeartSweep 3.2s ease-in-out infinite;
 }
 @keyframes aiHeartGlow {
-  0%   { box-shadow: 0 0 16px 4px rgba(57,255,136,0.55), var(--shadow-deep); }
-  20%  { box-shadow: 0 0 18px 5px rgba(80,170,255,0.55), var(--shadow-deep); }
-  40%  { box-shadow: 0 0 18px 5px rgba(180,108,255,0.55), var(--shadow-deep); }
-  60%  { box-shadow: 0 0 18px 5px rgba(255,92,160,0.55), var(--shadow-deep); }
-  80%  { box-shadow: 0 0 18px 5px rgba(255,176,32,0.55), var(--shadow-deep); }
-  100% { box-shadow: 0 0 16px 4px rgba(57,255,136,0.55), var(--shadow-deep); }
+  0%   { box-shadow: 0 0 18px 5px rgba(255,64,64,0.6), var(--shadow-deep); }   /* red */
+  25%  { box-shadow: 0 0 18px 5px rgba(255,255,255,0.6), var(--shadow-deep); } /* white */
+  50%  { box-shadow: 0 0 18px 5px rgba(57,255,136,0.6), var(--shadow-deep); }  /* green */
+  75%  { box-shadow: 0 0 18px 5px rgba(255,214,51,0.6), var(--shadow-deep); }  /* yellow */
+  100% { box-shadow: 0 0 18px 5px rgba(255,64,64,0.6), var(--shadow-deep); }   /* back to red */
 }
 @keyframes aiHeartSweep {
   0% { left: -60%; }
@@ -47,16 +46,15 @@
   .ai-heart { animation: none; }
   /* static glow so it still reads as a call to action */
   .ai-tutor-launcher-shine {
-    box-shadow: 0 0 14px 3px rgba(57,255,136,0.45), var(--shadow-deep);
+    box-shadow: 0 0 14px 3px rgba(255,64,64,0.45), var(--shadow-deep);
   }
   .ai-tutor-launcher,
   .ai-tutor-chip { transition: none; }
 }
 
-
 /* ---------- Heart icon inside the launcher ---------- */
 .ai-heart {
-  color: #39ff88;
+  color: #ff4040;
   filter: drop-shadow(0 0 6px currentColor);
   position: relative; z-index: 1; /* stays above the shine sweep */
   animation: aiHeartColor 5s ease-in-out infinite,
@@ -64,12 +62,11 @@
 }
 /* Same colour order and timing as aiHeartGlow */
 @keyframes aiHeartColor {
-  0%   { color: #39ff88; }
-  20%  { color: #50aaff; }
-  40%  { color: #b46cff; }
-  60%  { color: #ff5ca0; }
-  80%  { color: #ffb020; }
-  100% { color: #39ff88; }
+  0%   { color: #ff4040; } /* red */
+  25%  { color: #ffffff; } /* white */
+  50%  { color: #39ff88; } /* green */
+  75%  { color: #ffd633; } /* yellow */
+  100% { color: #ff4040; } /* back to red */
 }
 /* Soft double-beat, like a pulse */
 @keyframes aiHeartBeat {
@@ -82,10 +79,10 @@
 
 /* ---------- Panel ---------- */
 .ai-tutor-panel {
-  position: fixed; right: 20px; bottom: 88px; z-index: 41;
+  position: fixed; right: 20px; bottom: 218px; z-index: 41;
   width: min(360px, calc(100vw - 32px));
-  height: min(480px, calc(100vh - 140px));
-  height: min(480px, calc(100dvh - 140px)); /* mobile browser chrome / keyboard */
+  height: min(480px, calc(100vh - 270px));
+  height: min(480px, calc(100dvh - 270px)); /* mobile browser chrome / keyboard */
   background: var(--bg-panel); border: 1px solid var(--border-soft);
   border-radius: var(--radius); box-shadow: var(--shadow-deep);
   display: none; flex-direction: column; overflow: hidden;
