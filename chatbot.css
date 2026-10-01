@@ -43,13 +43,41 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .ai-tutor-launcher-shine,
-  .ai-tutor-launcher-shine::after { animation: none; }
+  .ai-tutor-launcher-shine::after,
+  .ai-heart { animation: none; }
   /* static glow so it still reads as a call to action */
   .ai-tutor-launcher-shine {
     box-shadow: 0 0 14px 3px rgba(57,255,136,0.45), var(--shadow-deep);
   }
   .ai-tutor-launcher,
   .ai-tutor-chip { transition: none; }
+}
+
+
+/* ---------- Heart icon inside the launcher ---------- */
+.ai-heart {
+  color: #39ff88;
+  filter: drop-shadow(0 0 6px currentColor);
+  position: relative; z-index: 1; /* stays above the shine sweep */
+  animation: aiHeartColor 5s ease-in-out infinite,
+             aiHeartBeat 1.4s ease-in-out infinite;
+}
+/* Same colour order and timing as aiHeartGlow */
+@keyframes aiHeartColor {
+  0%   { color: #39ff88; }
+  20%  { color: #50aaff; }
+  40%  { color: #b46cff; }
+  60%  { color: #ff5ca0; }
+  80%  { color: #ffb020; }
+  100% { color: #39ff88; }
+}
+/* Soft double-beat, like a pulse */
+@keyframes aiHeartBeat {
+  0%, 100% { transform: scale(1); }
+  14%      { transform: scale(1.15); }
+  28%      { transform: scale(1); }
+  42%      { transform: scale(1.1); }
+  70%      { transform: scale(1); }
 }
 
 /* ---------- Panel ---------- */
