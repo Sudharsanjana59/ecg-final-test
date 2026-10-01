@@ -2,7 +2,7 @@
 
 /* ---------- Launcher ---------- */
 .ai-tutor-launcher {
-  position: fixed; right: 20px; bottom: 10px; z-index: 40;
+  position: fixed; right: 20px; bottom: 150px; z-index: 40;
   width: 56px; height: 56px; border-radius: 50%;
   background: var(--bg-panel); border: 1px solid var(--border-soft);
   color: var(--ui-white); font-size: 22px; cursor: pointer;
