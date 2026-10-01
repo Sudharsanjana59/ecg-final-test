@@ -1,5 +1,6 @@
 /* ---- AI Rhythm Tutor widget ---- */
 
+/* ---------- Launcher ---------- */
 .ai-tutor-launcher {
   position: fixed; right: 20px; bottom: 20px; z-index: 40;
   width: 56px; height: 56px; border-radius: 50%;
@@ -11,9 +12,52 @@
 }
 .ai-tutor-launcher:hover { transform: scale(1.06); }
 
+/* Heart launcher: slow colour-cycling glow plus a highlight sweep,
+   noticeable without being garish. */
+.ai-tutor-launcher-shine {
+  border-color: transparent;
+  overflow: hidden;
+  isolation: isolate; /* keeps the rotated sweep clipped to the circle (Safari) */
+  animation: aiHeartGlow 5s ease-in-out infinite;
+}
+.ai-tutor-launcher-shine::after {
+  content: "";
+  position: absolute; top: -50%; left: -60%;
+  width: 40%; height: 200%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.6), transparent);
+  transform: rotate(20deg);
+  pointer-events: none;
+  animation: aiHeartSweep 3.2s ease-in-out infinite;
+}
+@keyframes aiHeartGlow {
+  0%   { box-shadow: 0 0 16px 4px rgba(57,255,136,0.55), var(--shadow-deep); }
+  20%  { box-shadow: 0 0 18px 5px rgba(80,170,255,0.55), var(--shadow-deep); }
+  40%  { box-shadow: 0 0 18px 5px rgba(180,108,255,0.55), var(--shadow-deep); }
+  60%  { box-shadow: 0 0 18px 5px rgba(255,92,160,0.55), var(--shadow-deep); }
+  80%  { box-shadow: 0 0 18px 5px rgba(255,176,32,0.55), var(--shadow-deep); }
+  100% { box-shadow: 0 0 16px 4px rgba(57,255,136,0.55), var(--shadow-deep); }
+}
+@keyframes aiHeartSweep {
+  0% { left: -60%; }
+  45%, 100% { left: 130%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-tutor-launcher-shine,
+  .ai-tutor-launcher-shine::after { animation: none; }
+  /* static glow so it still reads as a call to action */
+  .ai-tutor-launcher-shine {
+    box-shadow: 0 0 14px 3px rgba(57,255,136,0.45), var(--shadow-deep);
+  }
+  .ai-tutor-launcher,
+  .ai-tutor-chip { transition: none; }
+}
+
+/* ---------- Panel ---------- */
 .ai-tutor-panel {
   position: fixed; right: 20px; bottom: 88px; z-index: 41;
-  width: min(360px, calc(100vw - 32px)); height: min(480px, calc(100vh - 140px));
+  width: min(360px, calc(100vw - 32px));
+  height: min(480px, calc(100vh - 140px));
+  height: min(480px, calc(100dvh - 140px)); /* mobile browser chrome / keyboard */
   background: var(--bg-panel); border: 1px solid var(--border-soft);
   border-radius: var(--radius); box-shadow: var(--shadow-deep);
   display: none; flex-direction: column; overflow: hidden;
@@ -28,15 +72,22 @@
   font-family: var(--font-display);
 }
 .ai-tutor-close {
-  background: none; border: none; color: var(--ui-dim); cursor: pointer; font-size: 14px;
+  background: none; border: none; color: var(--ui-dim); cursor: pointer;
+  font-size: 14px; min-width: 32px; min-height: 32px; padding: 6px 8px;
+  border-radius: 8px;
 }
+.ai-tutor-close:hover { color: var(--ui-white); }
 
+/* ---------- Messages ---------- */
 .ai-tutor-body {
-  flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;
+  flex: 1; overflow-y: auto; padding: 12px;
+  display: flex; flex-direction: column; gap: 8px;
+  overscroll-behavior: contain; /* don't scroll the game behind the chat */
 }
 .ai-tutor-msg {
-  max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.5;
-  white-space: pre-wrap;
+  max-width: 85%; padding: 8px 12px; border-radius: 12px;
+  font-size: 13px; line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere;
 }
 .ai-tutor-msg-bot {
   align-self: flex-start; background: var(--accent-glow); color: var(--ui-white);
@@ -47,20 +98,52 @@
   color: var(--screen-black); font-weight: 600;
 }
 .ai-tutor-sources {
-  align-self: flex-start; font-size: 11px; color: var(--ui-dim); font-family: var(--font-mono);
-  margin-top: -4px;
+  align-self: flex-start; font-size: 11px; color: var(--ui-dim);
+  font-family: var(--font-mono); margin-top: -4px;
 }
 
+/* ---------- Suggestion chips ---------- */
+.ai-tutor-chips {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 10px;
+}
+.ai-tutor-chips[hidden] { display: none; } /* hide after the first message */
+.ai-tutor-chip {
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--accent);
+  background: var(--accent-glow); border: 1px solid var(--border-soft);
+  border-radius: 999px; padding: 5px 11px; cursor: pointer; white-space: nowrap;
+  transition: transform .12s ease;
+}
+.ai-tutor-chip:hover { transform: translateY(-1px); }
+
+/* ---------- Input row ---------- */
 .ai-tutor-input-row {
   display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--border-soft);
 }
 .ai-tutor-input-row input {
-  flex: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft);
+  flex: 1; min-width: 0;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft);
   border-radius: 999px; padding: 8px 14px; color: var(--ui-white); font-size: 13px;
 }
 .ai-tutor-input-row input:focus { outline: none; border-color: var(--accent); }
+.ai-tutor-input-row input:disabled { opacity: .6; }
 .ai-tutor-send {
   background: var(--accent); color: var(--screen-black); border: none;
-  border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 13px; cursor: pointer;
+  border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 13px;
+  cursor: pointer;
 }
 .ai-tutor-send:disabled { opacity: .5; cursor: default; }
+
+/* ---------- Keyboard focus ---------- */
+.ai-tutor-launcher:focus-visible,
+.ai-tutor-close:focus-visible,
+.ai-tutor-chip:focus-visible,
+.ai-tutor-send:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Small screens ---------- */
+@media (max-width: 600px) {
+  /* 16px stops iOS Safari zooming the page when the input is focused */
+  .ai-tutor-input-row input { font-size: 16px; }
+}
