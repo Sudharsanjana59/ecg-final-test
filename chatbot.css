@@ -38,7 +38,7 @@
 }
 @keyframes aiHeartSweep {
   0% { left: -60%; }
-  45%, 100% { left: 130%; }
+  45%, 100% { left: 10%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ai-tutor-launcher-shine,
