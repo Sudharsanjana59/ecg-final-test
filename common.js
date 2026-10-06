@@ -1,28 +1,34 @@
 /* =========================================================================
-   COMMON.JS — ECG PUZZLE GAME
+   COMMON.JS — ECG PULSE MATCH
 
-   PLAYER SYSTEM
-   -------------
-   A player is identified by PLAYER NAME.
+   PLAYER ID SYSTEM
+   ----------------
+   A player is identified by:
 
-   Example:
-
-       Sudharsan
-       Arun
-       Karthik
-
-   The same player name works across different devices.
+       DEVICE ID + PLAYER NAME
 
    Example:
 
-       Phone  + Sudharsan
-       Laptop + Sudharsan
+       Device A + Sudharsan
+       Device A + Arun
+       Device B + Sudharsan
 
-   Both use the same player account/progress.
+   These are 3 separate players.
 
-   NOTE:
-   This simple system uses the player name as the identity.
-   For a production application, Firebase Authentication is recommended.
+   Same device + same name
+   -----------------------
+   The player gets the same ID and continues their progress.
+
+   Same device + different name
+   ----------------------------
+   A new player is created and starts from Level 1.
+
+   Different device + same name
+   ----------------------------
+   A different player is created and starts from Level 1.
+
+   This prevents two people using the same name on different devices
+   from sharing their level progress.
    ========================================================================= */
 
 
@@ -39,33 +45,44 @@ const CLOUD_DB_URL =
    ========================================================================= */
 
 const LS_USER = "ecg_current_user";
+
 const LS_DEVICE_ID = "ecg_device_id";
+
 const LS_LEADERBOARD = "ecg_leaderboard";
+
 const LS_PROGRESS = "ecg_progress";
+
 const LS_CERTIFICATES = "ecg_certificates";
+
 const LS_SEEN_INSTRUCTIONS = "ecg_seen_instructions";
 
 const SS_ADMIN_PREVIEW = "ecg_admin_preview";
 
 
 /* =========================================================================
-   DEVICE ID
+   PLAYER / DEVICE ID
    ========================================================================= */
+
+/*
+   Creates one permanent ID for this browser/device.
+
+   This ID is stored in localStorage.
+
+   Example:
+
+   ecg_device_id =
+   "a7f7c4e9-9d7a-4a2a-9e4e-123456789abc"
+*/
 
 function getDeviceId() {
 
-  let deviceId =
-    localStorage.getItem(LS_DEVICE_ID);
+  let deviceId = localStorage.getItem(LS_DEVICE_ID);
 
   if (!deviceId) {
 
-    if (
-      window.crypto &&
-      crypto.randomUUID
-    ) {
+    if (window.crypto && crypto.randomUUID) {
 
-      deviceId =
-        crypto.randomUUID();
+      deviceId = crypto.randomUUID();
 
     } else {
 
@@ -73,48 +90,43 @@ function getDeviceId() {
         "device_" +
         Date.now() +
         "_" +
-        Math.random()
-          .toString(36)
-          .substring(2);
+        Math.random().toString(36).substring(2);
+
     }
 
-    localStorage.setItem(
-      LS_DEVICE_ID,
-      deviceId
-    );
+    localStorage.setItem(LS_DEVICE_ID, deviceId);
   }
 
   return deviceId;
 }
 
 
-/* =========================================================================
-   PLAYER ID
-   =========================================================================
+/*
+   Creates the actual PLAYER ID.
 
-   IMPORTANT:
+   Example:
 
-   Player ID is now based ONLY on player name.
+   Device:
+   abc123
 
-   This allows:
+   Name:
+   Sudharsan
 
-       Device A + Sudharsan
-       Device B + Sudharsan
-
-   to use the same progress.
-
-   ========================================================================= */
+   Player ID:
+   abc123_sudharsan
+*/
 
 function getPlayerId(name) {
 
-  const cleanName =
-    String(name || "")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[.#$[\]/]/g, "_");
+  const deviceId = getDeviceId();
 
-  return cleanName || "player";
+  const cleanName = String(name || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[.#$[\]/]/g, "_");
+
+  return deviceId + "_" + cleanName;
 }
 
 
@@ -126,48 +138,45 @@ function getCurrentUser() {
 
   try {
 
-    const raw =
-      sessionStorage.getItem(
-        LS_USER
-      );
+    const raw = sessionStorage.getItem(LS_USER);
 
     if (!raw) {
       return null;
     }
 
-    return JSON.parse(raw);
+    const user = JSON.parse(raw);
+
+    return user;
 
   } catch (e) {
 
-    console.warn(
-      "Could not read current user:",
-      e
-    );
+    console.warn("Could not read current user:", e);
 
     return null;
   }
 }
 
 
-/* =========================================================================
-   SET CURRENT USER
-   ========================================================================= */
+/*
+   Login / set current user.
+
+   IMPORTANT:
+   We calculate the player ID from DEVICE + NAME.
+
+   So changing the name creates a different player.
+*/
 
 function setCurrentUser(name) {
 
-  name =
-    String(name || "")
-      .trim();
+  name = String(name || "").trim();
 
   if (!name) {
     return null;
   }
 
-  const deviceId =
-    getDeviceId();
+  const deviceId = getDeviceId();
 
-  const playerId =
-    getPlayerId(name);
+  const playerId = getPlayerId(name);
 
   const user = {
 
@@ -180,16 +189,13 @@ function setCurrentUser(name) {
     name: name,
 
     isAdmin:
-      name.toLowerCase() ===
-      "adminisnarmi"
+      name.toLowerCase() === "adminisnarmi"
   };
-
 
   sessionStorage.setItem(
     LS_USER,
     JSON.stringify(user)
   );
-
 
   return user;
 }
@@ -201,16 +207,11 @@ function setCurrentUser(name) {
 
 function logout() {
 
-  sessionStorage.removeItem(
-    LS_USER
-  );
+  sessionStorage.removeItem(LS_USER);
 
-  sessionStorage.removeItem(
-    SS_ADMIN_PREVIEW
-  );
+  sessionStorage.removeItem(SS_ADMIN_PREVIEW);
 
-  window.location.href =
-    "index.html";
+  window.location.href = "index.html";
 }
 
 
@@ -220,39 +221,26 @@ function logout() {
 
 function requireLogin() {
 
-  const user =
-    getCurrentUser();
+  const user = getCurrentUser();
 
   if (!user) {
 
-    window.location.href =
-      "index.html";
+    window.location.href = "index.html";
 
     return null;
   }
 
-
   /*
-     Old sessions may contain
-     device-based IDs.
+     Backward compatibility.
 
-     Recreate using the new
-     name-based system.
+     If an old session exists without ID,
+     recreate the user with the new ID system.
   */
 
-  const correctId =
-    getPlayerId(user.name);
+  if (!user.id || !user.deviceId) {
 
-  if (
-    !user.id ||
-    user.id !== correctId
-  ) {
-
-    return setCurrentUser(
-      user.name
-    );
+    return setCurrentUser(user.name);
   }
-
 
   return user;
 }
@@ -264,11 +252,9 @@ function requireLogin() {
 
 function hasSeenInstructions() {
 
-  return (
-    localStorage.getItem(
-      LS_SEEN_INSTRUCTIONS
-    ) === "1"
-  );
+  return localStorage.getItem(
+    LS_SEEN_INSTRUCTIONS
+  ) === "1";
 }
 
 
@@ -287,11 +273,9 @@ function markInstructionsSeen() {
 
 function isAdminPreviewing() {
 
-  return (
-    sessionStorage.getItem(
-      SS_ADMIN_PREVIEW
-    ) === "1"
-  );
+  return sessionStorage.getItem(
+    SS_ADMIN_PREVIEW
+  ) === "1";
 }
 
 
@@ -313,16 +297,12 @@ function exitAdminPreview() {
 
 
 /* =========================================================================
-   FIREBASE CLOUD
+   FIREBASE CLOUD FUNCTIONS
    ========================================================================= */
 
 function cloudEnabled() {
 
-  return (
-    typeof CLOUD_DB_URL ===
-      "string" &&
-    CLOUD_DB_URL.trim() !== ""
-  );
+  return !!CLOUD_DB_URL.trim();
 }
 
 
@@ -334,9 +314,17 @@ function cloudBase() {
 }
 
 
-/* =========================================================================
-   FIREBASE KEY SAFE
-   ========================================================================= */
+/*
+   Firebase keys cannot contain:
+
+   .
+   #
+   $
+   [
+   ]
+   /
+   whitespace
+*/
 
 function cloudKeySafe(value) {
 
@@ -359,32 +347,28 @@ async function cloudGet(path) {
 
   try {
 
-    const res =
-      await fetch(
-        cloudBase() +
-        path +
-        ".json"
-      );
-
+    const res = await fetch(
+      cloudBase() +
+      path +
+      ".json"
+    );
 
     if (!res.ok) {
 
       console.warn(
         "Cloud GET failed:",
-        res.status,
-        path
+        res.status
       );
 
       return undefined;
     }
-
 
     return await res.json();
 
   } catch (e) {
 
     console.warn(
-      "Cloud GET unavailable:",
+      "Cloud sync GET unavailable:",
       e
     );
 
@@ -397,59 +381,37 @@ async function cloudGet(path) {
    FIREBASE PUT
    ========================================================================= */
 
-async function cloudPut(
-  path,
-  value
-) {
+async function cloudPut(path, value) {
 
   if (!cloudEnabled()) {
-    return false;
+    return;
   }
 
   try {
 
-    const res =
-      await fetch(
-        cloudBase() +
-        path +
-        ".json",
-        {
+    await fetch(
+      cloudBase() +
+      path +
+      ".json",
+      {
 
-          method: "PUT",
+        method: "PUT",
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
 
-          body:
-            JSON.stringify(value)
-        }
-      );
-
-
-    if (!res.ok) {
-
-      console.warn(
-        "Cloud PUT failed:",
-        res.status,
-        path
-      );
-
-      return false;
-    }
-
-
-    return true;
+        body: JSON.stringify(value)
+      }
+    );
 
   } catch (e) {
 
     console.warn(
-      "Cloud PUT unavailable:",
+      "Cloud PUT failed:",
       e
     );
-
-    return false;
   }
 }
 
@@ -458,59 +420,37 @@ async function cloudPut(
    FIREBASE POST
    ========================================================================= */
 
-async function cloudPost(
-  path,
-  value
-) {
+async function cloudPost(path, value) {
 
   if (!cloudEnabled()) {
-    return false;
+    return;
   }
 
   try {
 
-    const res =
-      await fetch(
-        cloudBase() +
-        path +
-        ".json",
-        {
+    await fetch(
+      cloudBase() +
+      path +
+      ".json",
+      {
 
-          method: "POST",
+        method: "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
 
-          body:
-            JSON.stringify(value)
-        }
-      );
-
-
-    if (!res.ok) {
-
-      console.warn(
-        "Cloud POST failed:",
-        res.status,
-        path
-      );
-
-      return false;
-    }
-
-
-    return true;
+        body: JSON.stringify(value)
+      }
+    );
 
   } catch (e) {
 
     console.warn(
-      "Cloud POST unavailable:",
+      "Cloud POST failed:",
       e
     );
-
-    return false;
   }
 }
 
@@ -519,49 +459,29 @@ async function cloudPost(
    FIREBASE DELETE
    ========================================================================= */
 
-async function cloudDelete(
-  path
-) {
+async function cloudDelete(path) {
 
   if (!cloudEnabled()) {
-    return false;
+    return;
   }
 
   try {
 
-    const res =
-      await fetch(
-        cloudBase() +
-        path +
-        ".json",
-        {
-          method: "DELETE"
-        }
-      );
-
-
-    if (!res.ok) {
-
-      console.warn(
-        "Cloud DELETE failed:",
-        res.status,
-        path
-      );
-
-      return false;
-    }
-
-
-    return true;
+    await fetch(
+      cloudBase() +
+      path +
+      ".json",
+      {
+        method: "DELETE"
+      }
+    );
 
   } catch (e) {
 
     console.warn(
-      "Cloud DELETE unavailable:",
+      "Cloud DELETE failed:",
       e
     );
-
-    return false;
   }
 }
 
@@ -576,51 +496,38 @@ async function refreshFromCloud() {
     return;
   }
 
-
   try {
 
     const [
       cloudBoard,
       cloudProgress,
       cloudCerts
-    ] =
-      await Promise.all([
+    ] = await Promise.all([
 
-        cloudGet(
-          "/leaderboard"
-        ),
+      cloudGet("/leaderboard"),
 
-        cloudGet(
-          "/progress"
-        ),
+      cloudGet("/progress"),
 
-        cloudGet(
-          "/certificates"
-        )
-      ]);
+      cloudGet("/certificates")
+
+    ]);
 
 
     /* ================================================================
        LEADERBOARD
        ================================================================ */
 
-    if (
-      cloudBoard !== undefined
-    ) {
+    if (cloudBoard !== undefined) {
 
       const cloudRows =
         cloudBoard
-          ? Object.values(
-              cloudBoard
-            ).filter(Boolean)
+          ? Object.values(cloudBoard)
+              .filter(Boolean)
           : [];
-
 
       localStorage.setItem(
         LS_LEADERBOARD,
-        JSON.stringify(
-          cloudRows
-        )
+        JSON.stringify(cloudRows)
       );
     }
 
@@ -629,31 +536,48 @@ async function refreshFromCloud() {
        PROGRESS
        ================================================================ */
 
-    if (
-      cloudProgress !== undefined
-    ) {
+    if (cloudProgress !== undefined) {
 
       const merged = {};
 
-
       if (cloudProgress) {
 
-        Object.values(
-          cloudProgress
-        )
-        .filter(Boolean)
-        .forEach(
-          (p) => {
+        Object.values(cloudProgress)
+          .filter(Boolean)
+          .forEach((p) => {
+
+            /*
+               NEW FORMAT
+
+               {
+                 userId,
+                 deviceId,
+                 name,
+                 unlocked
+               }
+            */
 
             if (!p.userId) {
+
+              /*
+                 IMPORTANT:
+
+                 Ignore old records that only have:
+
+                 {
+                   name: "Sudharsan"
+                 }
+
+                 This prevents the old shared-name bug.
+              */
+
               return;
             }
 
 
             merged[p.userId] = {
 
-              userId:
-                p.userId,
+              userId: p.userId,
 
               deviceId:
                 p.deviceId || "",
@@ -662,20 +586,16 @@ async function refreshFromCloud() {
                 p.name || "",
 
               unlocked:
-                Number(
-                  p.unlocked
-                ) || 1
-            };
-          }
-        );
-      }
+                Number(p.unlocked) || 1
 
+            };
+
+          });
+      }
 
       localStorage.setItem(
         LS_PROGRESS,
-        JSON.stringify(
-          merged
-        )
+        JSON.stringify(merged)
       );
     }
 
@@ -684,45 +604,36 @@ async function refreshFromCloud() {
        CERTIFICATES
        ================================================================ */
 
-    if (
-      cloudCerts !== undefined
-    ) {
+    if (cloudCerts !== undefined) {
 
       const merged = {};
 
-
       if (cloudCerts) {
 
-        Object.values(
-          cloudCerts
-        )
-        .filter(Boolean)
-        .forEach(
-          (record) => {
+        Object.values(cloudCerts)
+          .filter(Boolean)
+          .forEach((record) => {
 
-            if (
-              !record.userId
-            ) {
+            /*
+               New certificate records use userId.
+
+               Ignore old name-only certificates.
+            */
+
+            if (!record.userId) {
               return;
             }
 
+            merged[record.userId] = record;
 
-            merged[
-              record.userId
-            ] = record;
-          }
-        );
+          });
       }
-
 
       localStorage.setItem(
         LS_CERTIFICATES,
-        JSON.stringify(
-          merged
-        )
+        JSON.stringify(merged)
       );
     }
-
 
   } catch (e) {
 
@@ -738,11 +649,25 @@ async function refreshFromCloud() {
    PROGRESS
    ========================================================================= */
 
+
+/*
+   Get current player's progress.
+
+   IMPORTANT:
+   We do NOT use:
+
+       all[name]
+
+   anymore.
+
+   We use:
+
+       all[userId]
+*/
+
 function getProgress(name) {
 
-  const user =
-    getCurrentUser();
-
+  const user = getCurrentUser();
 
   if (!user) {
 
@@ -761,27 +686,22 @@ function getProgress(name) {
 
 
   const playerId =
-    user.id ||
-    getPlayerId(name);
+    user.id || getPlayerId(name);
 
 
-  return (
-    all[playerId] || {
+  return all[playerId] || {
 
-      userId:
-        playerId,
+    userId: playerId,
 
-      deviceId:
-        user.deviceId ||
-        getDeviceId(),
+    deviceId:
+      user.deviceId || getDeviceId(),
 
-      name:
-        user.name ||
-        name,
+    name:
+      user.name || name,
 
-      unlocked: 1
-    }
-  );
+    unlocked: 1
+
+  };
 }
 
 
@@ -794,9 +714,7 @@ function unlockNextLevel(
   completedLevel
 ) {
 
-  const user =
-    getCurrentUser();
-
+  const user = getCurrentUser();
 
   if (!user) {
     return;
@@ -812,25 +730,22 @@ function unlockNextLevel(
 
 
   const playerId =
-    user.id ||
-    getPlayerId(name);
+    user.id || getPlayerId(name);
 
 
   const current =
     all[playerId] || {
 
-      userId:
-        playerId,
+      userId: playerId,
 
       deviceId:
-        user.deviceId ||
-        getDeviceId(),
+        user.deviceId || getDeviceId(),
 
       name:
-        user.name ||
-        name,
+        user.name || name,
 
       unlocked: 1
+
     };
 
 
@@ -840,10 +755,7 @@ function unlockNextLevel(
 
   current.unlocked =
     Math.max(
-      Number(
-        current.unlocked
-      ) || 1,
-
+      Number(current.unlocked) || 1,
       nextLevel
     );
 
@@ -851,17 +763,16 @@ function unlockNextLevel(
   current.userId =
     playerId;
 
+
   current.deviceId =
-    user.deviceId ||
-    getDeviceId();
+    user.deviceId || getDeviceId();
+
 
   current.name =
-    user.name ||
-    name;
+    user.name || name;
 
 
-  all[playerId] =
-    current;
+  all[playerId] = current;
 
 
   localStorage.setItem(
@@ -871,17 +782,19 @@ function unlockNextLevel(
 
 
   /*
-     Save to Firebase.
-
      IMPORTANT:
-     Path uses PLAYER NAME ID,
-     not DEVICE + NAME.
+
+     Firebase path is now:
+
+     /progress/DEVICEID_NAME
+
+     NOT:
+
+     /progress/Sudharsan
   */
 
   cloudPut(
-    `/progress/${cloudKeySafe(
-      playerId
-    )}`,
+    `/progress/${cloudKeySafe(playerId)}`,
     current
   );
 }
@@ -950,14 +863,9 @@ function isCourseComplete(name) {
    ISSUE CERTIFICATE
    ========================================================================= */
 
-function getOrIssueCertificate(
-  name
-) {
+function getOrIssueCertificate(name) {
 
-  if (
-    !isCourseComplete(name)
-  ) {
-
+  if (!isCourseComplete(name)) {
     return null;
   }
 
@@ -980,9 +888,13 @@ function getOrIssueCertificate(
 
 
   const playerId =
-    user.id ||
-    getPlayerId(name);
+    user.id || getPlayerId(name);
 
+
+  /*
+     If certificate already exists,
+     return it.
+  */
 
   if (all[playerId]) {
 
@@ -995,76 +907,71 @@ function getOrIssueCertificate(
 
 
   /*
-     Calculate score only
-     for this player.
+     Calculate score only for THIS player.
   */
 
   const board =
     getLeaderboard()
       .filter(
         (r) =>
-          r.userId ===
-          playerId
+          r.userId === playerId
       );
 
 
   const bestByLevel = {};
 
 
-  board.forEach(
-    (r) => {
+  board.forEach((r) => {
 
-      const level =
-        Number(r.level);
-
-
-      if (
-        !Number.isFinite(level) ||
-        level < 1 ||
-        level > LEVELS.length
-      ) {
-
-        return;
-      }
+    const level =
+      Number(r.level);
 
 
-      if (
-        !bestByLevel[level] ||
-        Number(r.score) >
-          Number(
-            bestByLevel[level]
-          )
-      ) {
+    /*
+       Ignore invalid old levels.
 
-        bestByLevel[level] =
-          Number(r.score) || 0;
-      }
+       Your intended course is LEVELS.length.
+    */
+
+    if (
+      !Number.isFinite(level) ||
+      level < 1 ||
+      level > LEVELS.length
+    ) {
+      return;
     }
-  );
+
+
+    if (
+      !bestByLevel[level] ||
+      Number(r.score) >
+        Number(bestByLevel[level])
+    ) {
+
+      bestByLevel[level] =
+        Number(r.score) || 0;
+    }
+
+  });
 
 
   const totalScore =
     Object.values(
       bestByLevel
     ).reduce(
-      (a, b) =>
-        Number(a) +
-        Number(b),
+      (a, b) => a + b,
       0
     );
 
 
   const record = {
 
-    userId:
-      playerId,
+    userId: playerId,
 
     deviceId:
-      user.deviceId ||
-      getDeviceId(),
+      user.deviceId || getDeviceId(),
 
-    name:
-      name,
+    name: name,
 
     completedAt:
       timestamp,
@@ -1080,6 +987,7 @@ function getOrIssueCertificate(
 
     totalScore:
       totalScore
+
   };
 
 
@@ -1094,9 +1002,7 @@ function getOrIssueCertificate(
 
 
   cloudPut(
-    `/certificates/${cloudKeySafe(
-      playerId
-    )}`,
+    `/certificates/${cloudKeySafe(playerId)}`,
     record
   );
 
@@ -1109,9 +1015,7 @@ function getOrIssueCertificate(
    GET CERTIFICATE
    ========================================================================= */
 
-function getCertificate(
-  name
-) {
+function getCertificate(name) {
 
   const user =
     getCurrentUser();
@@ -1131,8 +1035,7 @@ function getCertificate(
 
 
   const playerId =
-    user.id ||
-    getPlayerId(name);
+    user.id || getPlayerId(name);
 
 
   return (
@@ -1148,18 +1051,11 @@ function getCertificate(
 
 function getLeaderboard() {
 
-  try {
-
-    return JSON.parse(
-      localStorage.getItem(
-        LS_LEADERBOARD
-      ) || "[]"
-    );
-
-  } catch (e) {
-
-    return [];
-  }
+  return JSON.parse(
+    localStorage.getItem(
+      LS_LEADERBOARD
+    ) || "[]"
+  );
 }
 
 
@@ -1167,9 +1063,7 @@ function getLeaderboard() {
    ADD LEADERBOARD ENTRY
    ========================================================================= */
 
-function addLeaderboardEntry(
-  entry
-) {
+function addLeaderboardEntry(entry) {
 
   const user =
     getCurrentUser();
@@ -1184,35 +1078,31 @@ function addLeaderboardEntry(
     getLeaderboard();
 
 
-  const playerId =
-    user.id ||
-    getPlayerId(
-      user.name
-    );
-
-
   const full = {
 
     ...entry,
 
+    /*
+       VERY IMPORTANT:
+
+       Every score now contains the
+       unique player ID.
+    */
+
     userId:
-      playerId,
+      user.id || getPlayerId(user.name),
 
     deviceId:
-      user.deviceId ||
-      getDeviceId(),
+      user.deviceId || getDeviceId(),
 
     name:
       user.name,
 
     timestamp:
       new Date().toISOString()
+
   };
 
-
-  /*
-     Save locally immediately.
-  */
 
   board.push(full);
 
@@ -1224,10 +1114,10 @@ function addLeaderboardEntry(
 
 
   /*
-     Save to Firebase.
+     Cloud leaderboard.
 
-     POST creates a unique
-     Firebase record.
+     Each attempt gets a Firebase
+     generated key using POST.
   */
 
   cloudPost(
@@ -1241,42 +1131,30 @@ function addLeaderboardEntry(
    TOP SCORES
    ========================================================================= */
 
-function topScores(
-  limit
-) {
+function topScores(limit) {
 
   return getLeaderboard()
 
-    .filter(
-      (r) => {
+    .filter((r) => {
 
-        const level =
-          Number(r.level);
+      const level =
+        Number(r.level);
 
-        return (
-          level >= 1 &&
-          level <= LEVELS.length
-        );
-      }
-    )
+      return (
+        level >= 1 &&
+        level <= LEVELS.length
+      );
+
+    })
 
     .sort(
-      (a, b) => {
-
-        return (
-          Number(b.score) -
-          Number(a.score)
-        ) ||
-
+      (a, b) =>
+        (Number(b.score) -
+          Number(a.score)) ||
         (
-          Number(
-            a.timeTakenSec
-          ) -
-          Number(
-            b.timeTakenSec
-          )
-        );
-      }
+          Number(a.timeTakenSec) -
+          Number(b.timeTakenSec)
+        )
     )
 
     .slice(
@@ -1290,6 +1168,24 @@ function topScores(
    PLAYER LEADERBOARD
    ========================================================================= */
 
+/*
+   ONE ROW PER UNIQUE PLAYER.
+
+   Because userId contains:
+
+       DEVICE + NAME
+
+   two people called Sudharsan can now
+   exist separately.
+
+   Example:
+
+       Device A + Sudharsan
+       Device B + Sudharsan
+
+   will be two different rows.
+*/
+
 function getPlayerLeaderboard() {
 
   const rows =
@@ -1299,149 +1195,151 @@ function getPlayerLeaderboard() {
   const byPlayer = {};
 
 
-  rows.forEach(
-    (r) => {
+  rows.forEach((r) => {
 
-      const level =
-        Number(r.level);
-
-
-      if (
-        !Number.isFinite(level) ||
-        level < 1 ||
-        level > LEVELS.length
-      ) {
-
-        return;
-      }
+    const level =
+      Number(r.level);
 
 
-      if (!r.userId) {
-        return;
-      }
+    /*
+       Ignore invalid levels such as
+       Level 21 / Level 22 if your course
+       has only 20 levels.
+    */
 
+    if (
+      !Number.isFinite(level) ||
+      level < 1 ||
+      level > LEVELS.length
+    ) {
 
-      const playerId =
-        r.userId;
-
-
-      if (
-        !byPlayer[playerId]
-      ) {
-
-        byPlayer[playerId] = {
-
-          userId:
-            playerId,
-
-          name:
-            r.name ||
-            "Unknown",
-
-          deviceId:
-            r.deviceId ||
-            "",
-
-          bestByLevel: {},
-
-          bestMarksByLevel: {},
-
-          bestSingle: 0,
-
-          lastPlayed:
-            r.timestamp,
-
-          attempts: 0
-        };
-      }
-
-
-      const p =
-        byPlayer[playerId];
-
-
-      p.attempts++;
-
-
-      /*
-         BEST SCORE FOR EACH LEVEL
-      */
-
-      if (
-        !p.bestByLevel[level] ||
-        Number(r.score) >
-          Number(
-            p.bestByLevel[level]
-          )
-      ) {
-
-        p.bestByLevel[level] =
-          Number(r.score) || 0;
-      }
-
-
-      /*
-         BEST MARKS FOR EACH LEVEL
-      */
-
-      if (
-        r.marks != null &&
-        (
-          !p.bestMarksByLevel[level] ||
-          Number(r.marks) >
-            Number(
-              p.bestMarksByLevel[
-                level
-              ]
-            )
-        )
-      ) {
-
-        p.bestMarksByLevel[level] =
-          Number(r.marks) || 0;
-      }
-
-
-      /*
-         BEST SINGLE SCORE
-      */
-
-      if (
-        Number(r.score) >
-        Number(p.bestSingle)
-      ) {
-
-        p.bestSingle =
-          Number(r.score) || 0;
-      }
-
-
-      /*
-         LAST PLAYED
-      */
-
-      if (
-        !p.lastPlayed ||
-        new Date(r.timestamp) >
-          new Date(
-            p.lastPlayed
-          )
-      ) {
-
-        p.lastPlayed =
-          r.timestamp;
-      }
-
+      return;
     }
-  );
+
+
+    /*
+       Old leaderboard entries may not
+       have userId.
+
+       We skip those because they cannot
+       reliably identify the player.
+    */
+
+    if (!r.userId) {
+      return;
+    }
+
+
+    const playerId =
+      r.userId;
+
+
+    if (!byPlayer[playerId]) {
+
+      byPlayer[playerId] = {
+
+        userId:
+          playerId,
+
+        name:
+          r.name || "Unknown",
+
+        deviceId:
+          r.deviceId || "",
+
+        bestByLevel: {},
+
+        bestMarksByLevel: {},
+
+        bestSingle: 0,
+
+        lastPlayed:
+          r.timestamp,
+
+        attempts: 0
+
+      };
+    }
+
+
+    const p =
+      byPlayer[playerId];
+
+
+    p.attempts++;
+
+
+    /*
+       BEST SCORE FOR EACH LEVEL
+    */
+
+    if (
+      !p.bestByLevel[level] ||
+      Number(r.score) >
+        Number(p.bestByLevel[level])
+    ) {
+
+      p.bestByLevel[level] =
+        Number(r.score) || 0;
+    }
+
+
+    /*
+       BEST MARKS FOR EACH LEVEL
+    */
+
+    if (
+      r.marks != null &&
+      (
+        !p.bestMarksByLevel[level] ||
+        Number(r.marks) >
+          Number(
+            p.bestMarksByLevel[level]
+          )
+      )
+    ) {
+
+      p.bestMarksByLevel[level] =
+        Number(r.marks) || 0;
+    }
+
+
+    /*
+       BEST SINGLE SCORE
+    */
+
+    if (
+      Number(r.score) >
+      Number(p.bestSingle)
+    ) {
+
+      p.bestSingle =
+        Number(r.score) || 0;
+    }
+
+
+    /*
+       LAST PLAYED
+    */
+
+    if (
+      !p.lastPlayed ||
+      new Date(r.timestamp) >
+        new Date(p.lastPlayed)
+    ) {
+
+      p.lastPlayed =
+        r.timestamp;
+    }
+
+  });
 
 
   return Object.values(
     byPlayer
   )
 
-  .map(
-    (p) => {
+    .map((p) => {
 
       return {
 
@@ -1474,15 +1372,16 @@ function getPlayerLeaderboard() {
           Object.keys(
             p.bestByLevel
           ).length
-      };
-    }
-  )
 
-  .sort(
-    (a, b) =>
-      b.totalPoints -
-      a.totalPoints
-  );
+      };
+
+    })
+
+    .sort(
+      (a, b) =>
+        b.totalPoints -
+        a.totalPoints
+    );
 }
 
 
@@ -1517,6 +1416,7 @@ function exportLeaderboardCSV() {
     "timeTakenSec",
 
     "timestamp"
+
   ];
 
 
@@ -1524,19 +1424,16 @@ function exportLeaderboardCSV() {
 
     headers.join(","),
 
-    ...rows.map(
-      (r) =>
+    ...rows.map((r) =>
 
-        headers
-
-          .map(
-            (h) =>
-              JSON.stringify(
-                r[h] ?? ""
-              )
-          )
-
-          .join(",")
+      headers
+        .map(
+          (h) =>
+            JSON.stringify(
+              r[h] ?? ""
+            )
+        )
+        .join(",")
     )
 
   ].join("\n");
@@ -1568,15 +1465,11 @@ function downloadFile(
 
 
   const url =
-    URL.createObjectURL(
-      blob
-    );
+    URL.createObjectURL(blob);
 
 
   const a =
-    document.createElement(
-      "a"
-    );
+    document.createElement("a");
 
 
   a.href = url;
@@ -1585,16 +1478,10 @@ function downloadFile(
     filename;
 
 
-  document.body.appendChild(a);
-
   a.click();
 
-  a.remove();
 
-
-  URL.revokeObjectURL(
-    url
-  );
+  URL.revokeObjectURL(url);
 }
 
 
@@ -1641,14 +1528,12 @@ function attachTilt(
 
 
       const px =
-        (e.clientX -
-          r.left) /
+        (e.clientX - r.left) /
         r.width;
 
 
       const py =
-        (e.clientY -
-          r.top) /
+        (e.clientY - r.top) /
         r.height;
 
 
@@ -1697,11 +1582,6 @@ function applyAccent(
     document.documentElement;
 
 
-  if (!theme) {
-    return;
-  }
-
-
   target.style.setProperty(
     "--accent",
     theme.accent
@@ -1716,8 +1596,7 @@ function applyAccent(
 
   target.style.setProperty(
     "--accent-glow",
-    theme.accent +
-      "33"
+    theme.accent + "33"
   );
 }
 
@@ -1726,9 +1605,7 @@ function applyAccent(
    ESCAPE HTML
    ========================================================================= */
 
-function escapeHtml(
-  str
-) {
+function escapeHtml(str) {
 
   const div =
     document.createElement(
@@ -1748,9 +1625,7 @@ function escapeHtml(
    SHUFFLE
    ========================================================================= */
 
-function shuffle(
-  arr
-) {
+function shuffle(arr) {
 
   const a =
     arr.slice();
@@ -1772,7 +1647,8 @@ function shuffle(
     [
       a[i],
       a[j]
-    ] = [
+    ] =
+    [
       a[j],
       a[i]
     ];
@@ -1787,9 +1663,7 @@ function shuffle(
    FORMAT TIME
    ========================================================================= */
 
-function formatTime(
-  sec
-) {
+function formatTime(sec) {
 
   const m =
     Math.floor(
@@ -1826,7 +1700,6 @@ function formatDateNice(
   return d.toLocaleDateString(
     undefined,
     {
-
       year: "numeric",
 
       month: "long",
@@ -1869,6 +1742,7 @@ function spawnFloatParticles(
     "#fbbf24",
 
     "#39ff88"
+
   ];
 
 
@@ -1899,7 +1773,7 @@ function spawnFloatParticles(
 
     p.style.left =
       Math.random() *
-        100 +
+      100 +
       "vw";
 
 
@@ -1914,24 +1788,25 @@ function spawnFloatParticles(
 
     p.style.fontSize =
       10 +
-      Math.random() * 14 +
+      Math.random() *
+      14 +
       "px";
 
 
     p.style.animationDuration =
       10 +
-      Math.random() * 14 +
+      Math.random() *
+      14 +
       "s";
 
 
     p.style.animationDelay =
-      Math.random() * 10 +
+      Math.random() *
+      10 +
       "s";
 
 
-    document.body.appendChild(
-      p
-    );
+    document.body.appendChild(p);
   }
 }
 
@@ -1953,6 +1828,7 @@ function launchConfetti(
     "#eef3f0",
 
     "#1fce6b"
+
   ];
 
 
@@ -1980,12 +1856,13 @@ function launchConfetti(
 
     const size =
       5 +
-      Math.random() * 6;
+      Math.random() *
+      6;
 
 
     s.style.left =
       Math.random() *
-        100 +
+      100 +
       "vw";
 
 
@@ -1995,7 +1872,8 @@ function launchConfetti(
 
 
     s.style.height =
-      size * 0.5 +
+      size *
+      0.5 +
       "px";
 
 
@@ -2010,12 +1888,14 @@ function launchConfetti(
 
     s.style.animationDuration =
       1.8 +
-      Math.random() * 1.4 +
+      Math.random() *
+      1.4 +
       "s";
 
 
     s.style.animationDelay =
-      Math.random() * 0.4 +
+      Math.random() *
+      0.4 +
       "s";
 
 
@@ -2026,40 +1906,13 @@ function launchConfetti(
   (
     container ||
     document.body
-  )
-  .appendChild(
+  ).appendChild(
     wrap
   );
 
 
   setTimeout(
-    () =>
-      wrap.remove(),
+    () => wrap.remove(),
     3600
   );
-}
-
-
-/* =========================================================================
-   STARTUP CLOUD SYNC
-   =========================================================================
-
-   This makes sure pages that load common.js
-   can immediately try to retrieve Firebase data.
-
-   ========================================================================= */
-
-window.addEventListener(
-  "online",
-  () => {
-
-    refreshFromCloud()
-      .catch(
-        (e) =>
-          console.warn(
-            "Online sync failed:",
-            e
-          )
-      );
-  }
-);
+       }
