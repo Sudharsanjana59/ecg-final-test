@@ -37,7 +37,8 @@
    ========================================================================= */
 
 const CLOUD_DB_URL =
-  "https://ecg-final-test-default-rtdb.firebaseio.com/";
+  const CLOUD_DB_URL =
+  "https://ecg-puzzle-game-default-rtdb.firebaseio.com/";
 
 
 /* =========================================================================
